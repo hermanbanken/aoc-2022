@@ -6,20 +6,27 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
-func main1() {
+func main() {
 	r := reader()
 	defer r.Close()
 
-	var maxCalories int64 = 0
-	var elfCalories int64 = 0
+	var maxCalories []int = []int{}
+	var elfCalories int = 0
 
 	next := func() {
-		if elfCalories > maxCalories {
-			maxCalories = elfCalories
+		if len(maxCalories) == 0 || elfCalories > maxCalories[0] {
+			maxCalories = append(maxCalories, elfCalories)
+			sort.Ints(maxCalories)
+			if len(maxCalories) > 3 {
+				maxCalories = maxCalories[len(maxCalories)-3:]
+			}
 		}
 		elfCalories = 0
 	}
@@ -35,10 +42,12 @@ func main1() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		elfCalories += i
+		elfCalories += int(i)
 	}
 	next()
-	fmt.Println(maxCalories)
+
+	fmt.Println("top:", last(maxCalories))
+	fmt.Println("sum(3):", sum(maxCalories))
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -59,4 +68,19 @@ func reader() io.ReadCloser {
 		log.Fatal(err)
 	}
 	return file
+}
+
+func last[T any](in []T) (out T) {
+	if len(in) > 0 {
+		return in[len(in)-1]
+	}
+	return
+}
+
+func sum[T constraints.Integer](in []T) (out T) {
+	var sum T
+	for _, c := range in {
+		sum += c
+	}
+	return sum
 }

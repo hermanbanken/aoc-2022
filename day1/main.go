@@ -3,18 +3,16 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"log"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 
-	"golang.org/x/exp/constraints"
+	"lib"
 )
 
 func main() {
-	r := reader()
+	r := lib.Reader()
 	defer r.Close()
 
 	var maxCalories []int = []int{}
@@ -46,41 +44,10 @@ func main() {
 	}
 	next()
 
-	fmt.Println("top:", last(maxCalories))
-	fmt.Println("sum(3):", sum(maxCalories))
+	fmt.Println("top:", lib.Last(maxCalories))
+	fmt.Println("sum(3):", lib.Sum(maxCalories))
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func reader() io.ReadCloser {
-	if len(os.Args) < 2 {
-		log.Fatal("Supply filename as first argument")
-	}
-
-	if os.Args[1] == "-" {
-		return os.Stdin
-	}
-
-	file, err := os.Open(os.Args[1])
-	if err != nil {
-		log.Fatal(err)
-	}
-	return file
-}
-
-func last[T any](in []T) (out T) {
-	if len(in) > 0 {
-		return in[len(in)-1]
-	}
-	return
-}
-
-func sum[T constraints.Integer](in []T) (out T) {
-	var sum T
-	for _, c := range in {
-		sum += c
-	}
-	return sum
 }

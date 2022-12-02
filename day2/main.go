@@ -1,9 +1,9 @@
 package main
 
 import (
+	"aoc/lib"
 	"bufio"
 	"fmt"
-	"lib"
 	"log"
 	"strings"
 )
@@ -12,44 +12,34 @@ func main() {
 	r := lib.Reader()
 	defer r.Close()
 
-	var sum = 0
+	var sum1 = 0
+	var sum2 = 0
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		t := strings.TrimSpace(scanner.Text())
-		// sum += resultPart1(t[0], t[2]) + piecePart1(t[2])
-		sum += resultPart2(t[0], t[2])
+		sum1 += resultPart1(int(t[0]-'A'), int(t[2]-'X'))
+		sum2 += resultPart2(int(t[0]-'A'), int(t[2]-'X'))
 	}
-	fmt.Println("result:", sum)
+	fmt.Println("result1:", sum1)
+	fmt.Println("result2:", sum2)
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func resultPart1(them byte, us byte) int {
-	them -= 'A'
-	us -= 'X'
-
+func resultPart1(them int, us int) int {
+	piece := us + 1
 	if us == them {
-		return 3
+		return 3 + piece
 	}
 	if us-1 == them || us+2 == them {
-		return 6
+		return 6 + piece
 	}
-	return 0
+	return 0 + piece
 }
 
-func piecePart1(us byte) int {
-	return int(us - 'X' + 1)
-}
-
-func resultPart2(them byte, result byte) int {
-	them -= 'A'
-	result -= 'X'
-	offset := int(result) - 1
-
-	pick := (int(them) + offset) % 3
-	if pick < 0 {
-		pick += 3
-	}
-	return int(result)*3 + pick + 1
+func resultPart2(them int, result int) int {
+	offset := result - 1
+	pick := (them + offset + 3) % 3
+	return result*3 + pick + 1
 }

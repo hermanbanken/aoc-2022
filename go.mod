@@ -1,4 +1,4 @@
-module lib
+module aoc
 
 go 1.19
 

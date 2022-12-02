@@ -1,14 +1,13 @@
 package main
 
 import (
+	"aoc/lib"
 	"bufio"
 	"fmt"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
-
-	"lib"
 )
 
 func main() {

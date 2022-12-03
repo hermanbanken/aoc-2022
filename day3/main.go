@@ -12,7 +12,7 @@ func main() {
 	r := lib.Reader()
 	defer r.Close()
 
-	var sum1 = 0
+	var sum = 0
 	scanner := bufio.NewScanner(r)
 	/*var mask []bool
 	i := 0
@@ -28,26 +28,38 @@ func main() {
 			break
 		}
 	}*/
-	// mask = make([]bool, 52)
 
+	var masks = [][]bool{make([]bool, 53), make([]bool, 53)}
+	line := 0
 	for scanner.Scan() {
 		t := strings.TrimSpace(scanner.Text())
 		if t == "" {
 			break
 		}
 
-		idx := strings.IndexAny(t[0:len(t)/2], t[len(t)/2:])
-		log.Println("prio", prio(t[idx]), "item", string(t[idx]))
-		sum1 += int(prio(t[idx]))
+		if line%3 == 2 {
+			for _, letter := range t {
+				if masks[0][prio(letter)] && masks[1][prio(letter)] {
+					log.Println("match", string(letter))
+					sum += int(prio(letter))
+					break
+				}
+			}
+			masks = [][]bool{make([]bool, 53), make([]bool, 53)}
+		} else {
+			for _, letter := range t {
+				masks[line%3][prio(letter)] = true
+			}
+		}
+		line++
 	}
-	fmt.Println("result1:", sum1)
-	// fmt.Println("result2:", sum2)
+	fmt.Println("result:", sum)
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func prio(b byte) byte {
+func prio(b rune) rune {
 	if b >= 'a' && b <= 'z' {
 		return b - 'a' + 1
 	}

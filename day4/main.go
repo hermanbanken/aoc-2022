@@ -25,7 +25,13 @@ func main() {
 		sections := strings.Split(t, ",")
 		a1, a2 := parseRange(sections[0])
 		b1, b2 := parseRange(sections[1])
-		if (a1 >= b1 && a2 <= b2) || (b1 >= a1 && b2 <= a2) {
+
+		overlap :=
+			// a starts early, ends within b
+			(a1 <= b1 && a2 >= b1) ||
+				// b starts early, ends within a
+				(b1 <= a1 && b2 >= a1)
+		if overlap {
 			sum += 1
 		}
 	}

@@ -12,7 +12,7 @@ func main() {
 	r := lib.Reader()
 	defer r.Close()
 
-	var buf []byte = make([]byte, 4)
+	var buf []byte = make([]byte, 14)
 	var i = 0
 	var waitingForEndOfLine = false
 	for {
@@ -31,11 +31,11 @@ func main() {
 		}
 		fmt.Print(string(buf[0]))
 		i += read
-		if i > 3 && unique(buf) {
+		if i >= len(buf) && unique(buf) {
 			waitingForEndOfLine = true
 			fmt.Println(" ", i)
 		}
-		copy(buf[1:4], buf[0:3])
+		copy(buf[1:], buf[0:len(buf)-1])
 	}
 }
 

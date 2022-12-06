@@ -33,12 +33,10 @@ func main() {
 			}
 		}
 	}
-	log.Println(stacks)
 
 	// Read moves
 	for scanner.Scan() {
 		t := strings.TrimSpace(scanner.Text())
-		fmt.Printf("%q\n", t)
 		if t == "" {
 			continue
 		}
@@ -60,13 +58,10 @@ func main() {
 }
 
 func move(count, src, dst int, stacks [][]byte) {
-
 	fmt.Println("moving", string(stacks[src][0:count]), "from", src, "to", dst)
 	var dstcopy = make([]byte, count+len(stacks[dst]))
 	copy(dstcopy[0:], stacks[src][0:count])
 	copy(dstcopy[count:], stacks[dst])
 	stacks[dst] = dstcopy
 	stacks[src] = stacks[src][count:]
-	fmt.Println(string(stacks[dst]), string(stacks[src]))
-
 }

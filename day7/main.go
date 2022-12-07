@@ -5,19 +5,10 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
 )
-
-type File struct {
-	Name   string
-	Dir    bool
-	Size   int
-	Nested []*File
-	Parent *File
-}
 
 func main() {
 	r := lib.Reader()
@@ -25,7 +16,6 @@ func main() {
 	scanner := bufio.NewScanner(r)
 
 	// Read stacks
-	var pwd = ""
 	var file *File
 	var isListing = false
 	for scanner.Scan() {
@@ -53,13 +43,10 @@ func main() {
 		if strings.HasPrefix(t, "$ cd ") {
 			dir := strings.TrimPrefix(t, "$ cd ")
 			if strings.HasPrefix(dir, "/") {
-				pwd = dir
 				file = &File{Name: "/", Dir: true}
 			} else if dir == ".." {
-				pwd, _ = path.Split(pwd)
 				file = file.Up()
 			} else {
-				pwd = path.Join(pwd, dir)
 				file = file.Descend(dir)
 			}
 		}
@@ -78,6 +65,7 @@ func main() {
 		}
 	})
 
+	// Part 1
 	sum := 0
 	file.Walk(func(f *File) {
 		if f.Dir && f.Size <= 100000 {
@@ -86,6 +74,7 @@ func main() {
 	})
 	fmt.Println("sum ", sum)
 
+	// Part 2
 	available := 70000000 - file.Size
 	needed := 30000000
 	deleted := needed - available
@@ -101,15 +90,23 @@ func main() {
 
 	for _, s := range sizes {
 		if s < deleted {
-			fmt.Println(s, " too small")
 			continue
 		}
 		fmt.Println(s)
+		break
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type File struct {
+	Name   string
+	Dir    bool
+	Size   int
+	Nested []*File
+	Parent *File
 }
 
 func (f *File) Up() *File {

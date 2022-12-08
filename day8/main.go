@@ -32,15 +32,16 @@ func main() {
 	}
 
 	g := Grid{mp, hidden}
-	visible := 0
+	highest := 0
 	for x := 0; x < len(mp[0]); x++ {
 		for y := 0; y < len(mp); y++ {
-			if g.Visible(x, y) {
-				visible += 1
+			s := g.Score(x, y)
+			if s > highest {
+				highest = s
 			}
 		}
 	}
-	fmt.Println(visible)
+	fmt.Println(highest)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -52,43 +53,51 @@ type Grid struct {
 	hidden [][]bool
 }
 
-func (g Grid) Visible(x, y int) bool {
-	return g.LeftOk(x, y) || g.RightOk(x, y) || g.TopOk(x, y) || g.BottomOk(x, y)
+func (g Grid) Score(x, y int) int {
+	return g.LeftScore(x, y) * g.RightScore(x, y) * g.TopScore(x, y) * g.BottomScore(x, y)
 }
 
-func (g Grid) LeftOk(x, y int) bool {
+func (g Grid) LeftScore(x, y int) int {
+	count := 0
 	for px := x - 1; px >= 0; px-- {
+		count += 1
 		if g.mp[y][px] >= g.mp[y][x] {
-			return false
+			return count
 		}
 	}
-	return true
+	return count
 }
 
-func (g Grid) RightOk(x, y int) bool {
+func (g Grid) RightScore(x, y int) int {
+	count := 0
 	for px := x + 1; px < len(g.mp[0]); px++ {
+		count += 1
 		if g.mp[y][px] >= g.mp[y][x] {
-			return false
+			return count
 		}
 	}
-	return true
+	return count
 }
 
-func (g Grid) TopOk(x, y int) bool {
+func (g Grid) TopScore(x, y int) int {
+	count := 0
 	for py := y - 1; py >= 0; py-- {
+		count += 1
 		if g.mp[py][x] >= g.mp[y][x] {
-			return false
+			return count
 		}
 	}
-	return true
+	return count
 }
-func (g Grid) BottomOk(x, y int) bool {
+func (g Grid) BottomScore(x, y int) int {
+	count := 0
 	for py := y + 1; py < len(g.mp); py++ {
+		count += 1
 		if g.mp[py][x] >= g.mp[y][x] {
-			return false
+			return count
 		}
 	}
-	return true
+	return count
 }
 
 func (g Grid) Subset() Grid {

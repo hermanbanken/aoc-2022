@@ -16,3 +16,10 @@ func Sum[T constraints.Integer](in []T) (out T) {
 	}
 	return sum
 }
+
+func AbsDiff(a, b int) int {
+	if a > b {
+		return a - b
+	}
+	return b - a
+}

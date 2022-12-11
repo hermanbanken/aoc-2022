@@ -1,6 +1,10 @@
 package lib
 
-import "golang.org/x/exp/constraints"
+import (
+	"strconv"
+
+	"golang.org/x/exp/constraints"
+)
 
 func Last[T any](in []T) (out T) {
 	if len(in) > 0 {
@@ -22,4 +26,12 @@ func AbsDiff(a, b int) int {
 		return a - b
 	}
 	return b - a
+}
+
+func Int(s string) int {
+	d, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return d
 }

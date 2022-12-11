@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strconv"
 	"strings"
 )
 
-type Item int
-
 type Monkey struct {
-	items           []Item
-	Op              func(Item) Item
-	TestDivisibleBy Item
+	items           []int
+	Op              func(int) int
+	TestDivisibleBy int
 	OnTrueMonkey    int
 	OnFalseMonkey   int
 	business        int
@@ -32,38 +29,33 @@ func main() {
 		var m Monkey
 
 		scanner.Scan()
-		m.items = lib.Map(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) Item {
-			d, err := strconv.Atoi(v)
-			if err != nil {
-				panic(err)
-			}
-			return Item(d)
+		m.items = lib.Map(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) int {
+			return lib.Int(v)
 		})
 		scanner.Scan()
-		m.Op = parseOp(strings.TrimPrefix(scanner.Text(), "Operation: "))
+		op := strings.TrimPrefix(scanner.Text(), "  Operation: ")
+		m.Op = func(i int) int { return doOp(op, i) }
 		scanner.Scan()
-		div, _ := strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
-		m.TestDivisibleBy = Item(div)
-
+		m.TestDivisibleBy = lib.Int(lib.Last(strings.Split(scanner.Text(), " ")))
 		scanner.Scan()
-		m.OnTrueMonkey, _ = strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
+		m.OnTrueMonkey = lib.Int(lib.Last(strings.Split(scanner.Text(), " ")))
 		scanner.Scan()
-		m.OnFalseMonkey, _ = strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
+		m.OnFalseMonkey = lib.Int(lib.Last(strings.Split(scanner.Text(), " ")))
 		scanner.Scan()
 
 		monkeys = append(monkeys, &m)
 		fmt.Println(m)
 	}
 
-	var product int64 = 1
+	var product int = 1
 	for _, m := range monkeys {
-		product *= int64(m.TestDivisibleBy)
+		product *= int(m.TestDivisibleBy)
 	}
 
 	for i := 1; i <= 10000; i++ {
 		fmt.Println("round", i)
 		for _, m := range monkeys {
-			m.Round(monkeys, Item(product), false)
+			m.Round(monkeys, product, false)
 		}
 		for i, m := range monkeys {
 			fmt.Printf("Monkey %d inspected items %d times.\n", i, m.business)
@@ -80,20 +72,16 @@ func main() {
 	}
 }
 
-func (m *Monkey) Round(others []*Monkey, product Item, divideByThree bool) {
-	if len(m.items) == 0 {
-		return
-	}
-
+func (m *Monkey) Round(others []*Monkey, product int, divideByThree bool) {
 	for _, item := range m.items {
 		m.business += 1
-		var newLevel Item
+		var newLevel = m.Op(item)
 		if divideByThree {
-			newLevel = m.Op(item) / Item(3)
+			newLevel /= 3
 		} else {
-			newLevel = m.Op(item) % product
+			newLevel %= product
 		}
-		if newLevel.IsDivisibleBy(m.TestDivisibleBy) {
+		if newLevel%m.TestDivisibleBy == 0 {
 			others[m.OnTrueMonkey].items = append(others[m.OnTrueMonkey].items, newLevel)
 		} else {
 			others[m.OnFalseMonkey].items = append(others[m.OnFalseMonkey].items, newLevel)
@@ -102,12 +90,8 @@ func (m *Monkey) Round(others []*Monkey, product Item, divideByThree bool) {
 	m.items = nil
 }
 
-func (item Item) IsDivisibleBy(div Item) bool {
-	return item%div == 0
-}
-
 // lazy math; no attempt to parse needed
-func doOp(op string, old Item) (new Item) {
+func doOp(op string, old int) (new int) {
 	switch op {
 	case "new = old + 1":
 		new = old + 1
@@ -137,13 +121,4 @@ func doOp(op string, old Item) (new Item) {
 		panic("unknown operation: " + op)
 	}
 	return
-}
-
-func parseOp(op string) func(Item) Item {
-	op = strings.TrimSpace(op)
-	op = strings.TrimPrefix(op, "Operation: ")
-	return func(item Item) Item {
-		item = doOp(op, item)
-		return item
-	}
 }

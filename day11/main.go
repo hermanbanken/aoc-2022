@@ -10,23 +10,12 @@ import (
 	"strings"
 )
 
-type Item struct {
-	base int64
-	ops  []*Op
-}
-
-type Op struct {
-	str      string
-	isMult   bool
-	isPlus   bool
-	isSquare bool
-	b        int
-}
+type Item int
 
 type Monkey struct {
-	items           []*Item
+	items           []Item
 	Op              func(Item) Item
-	TestDivisibleBy int
+	TestDivisibleBy Item
 	OnTrueMonkey    int
 	OnFalseMonkey   int
 	business        int
@@ -43,17 +32,18 @@ func main() {
 		var m Monkey
 
 		scanner.Scan()
-		m.items = doMap(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) *Item {
+		m.items = lib.Map(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) Item {
 			d, err := strconv.Atoi(v)
 			if err != nil {
 				panic(err)
 			}
-			return &Item{base: int64(d)}
+			return Item(d)
 		})
 		scanner.Scan()
 		m.Op = parseOp(strings.TrimPrefix(scanner.Text(), "Operation: "))
 		scanner.Scan()
-		m.TestDivisibleBy, _ = strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
+		div, _ := strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
+		m.TestDivisibleBy = Item(div)
 
 		scanner.Scan()
 		m.OnTrueMonkey, _ = strconv.Atoi(lib.Last(strings.Split(scanner.Text(), " ")))
@@ -65,10 +55,15 @@ func main() {
 		fmt.Println(m)
 	}
 
+	var product int64 = 1
+	for _, m := range monkeys {
+		product *= int64(m.TestDivisibleBy)
+	}
+
 	for i := 1; i <= 10000; i++ {
 		fmt.Println("round", i)
 		for _, m := range monkeys {
-			m.Round(monkeys)
+			m.Round(monkeys, Item(product), false)
 		}
 		for i, m := range monkeys {
 			fmt.Printf("Monkey %d inspected items %d times.\n", i, m.business)
@@ -78,51 +73,41 @@ func main() {
 	sort.Slice(monkeys, func(i, j int) bool {
 		return monkeys[i].business > monkeys[j].business
 	})
-	fmt.Println("part1", monkeys[0].business*monkeys[1].business)
+	fmt.Println(monkeys[0].business * monkeys[1].business)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (m *Monkey) Round(others []*Monkey) {
+func (m *Monkey) Round(others []*Monkey, product Item, divideByThree bool) {
 	if len(m.items) == 0 {
 		return
 	}
 
 	for _, item := range m.items {
 		m.business += 1
-		newLevel := m.Op(*item)
-		if newLevel.IsDivisibleBy(m.TestDivisibleBy) {
-			others[m.OnTrueMonkey].items = append(others[m.OnTrueMonkey].items, &newLevel)
+		var newLevel Item
+		if divideByThree {
+			newLevel = m.Op(item) / Item(3)
 		} else {
-			others[m.OnFalseMonkey].items = append(others[m.OnFalseMonkey].items, &newLevel)
+			newLevel = m.Op(item) % product
+		}
+		if newLevel.IsDivisibleBy(m.TestDivisibleBy) {
+			others[m.OnTrueMonkey].items = append(others[m.OnTrueMonkey].items, newLevel)
+		} else {
+			others[m.OnFalseMonkey].items = append(others[m.OnFalseMonkey].items, newLevel)
 		}
 	}
 	m.items = nil
 }
 
-func (item Item) IsDivisibleBy(div int) bool {
-	b := item.base
-	for i := len(item.ops) - 1; i >= 0; i-- {
-		if item.ops[i].isMult && item.ops[i].b == div {
-			return true
-		} else if item.ops[i].isSquare {
-			continue
-		} else {
-			// oh no
-			fmt.Println("IsDivisibleBy", b, div, *item)
-			panic("dont know what to do now")
-		}
-	}
-	// for _, op := range item.ops {
-	// 	b = doOp(op.str, b)
-	// }
-	fmt.Println("IsDivisibleBy", b, div)
-	return b%int64(div) == 0
+func (item Item) IsDivisibleBy(div Item) bool {
+	return item%div == 0
 }
 
-func doOp(op string, old int64) (new int64) {
+// lazy math; no attempt to parse needed
+func doOp(op string, old Item) (new Item) {
 	switch op {
 	case "new = old + 1":
 		new = old + 1
@@ -157,21 +142,8 @@ func doOp(op string, old int64) (new int64) {
 func parseOp(op string) func(Item) Item {
 	op = strings.TrimSpace(op)
 	op = strings.TrimPrefix(op, "Operation: ")
-	o := Op{str: op}
-	o.isMult = strings.Contains(op, "*")
-	o.isSquare = strings.Contains(op, "* old")
-	o.isPlus = strings.Contains(op, "+")
-	o.b, _ = strconv.Atoi(lib.Last(strings.Split(op, " ")))
 	return func(item Item) Item {
-		item.ops = append(item.ops, &o)
+		item = doOp(op, item)
 		return item
 	}
-}
-
-func doMap[T any, R any](ts []T, fn func(T) R) (out []R) {
-	out = make([]R, len(ts))
-	for i, t := range ts {
-		out[i] = fn(t)
-	}
-	return
 }

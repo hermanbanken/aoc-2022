@@ -5,14 +5,15 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 )
 
 type Monkey struct {
-	items           []int
-	Op              func(int) int
+	items           []*big.Int
+	Op              func(*big.Int) *big.Int
 	TestDivisibleBy int
 	OnTrueMonkey    int
 	OnFalseMonkey   int
@@ -30,12 +31,12 @@ func main() {
 		var m Monkey
 
 		scanner.Scan()
-		m.items = doMap(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) int {
+		m.items = doMap(strings.Split(strings.Split(scanner.Text(), ": ")[1], ", "), func(v string) *big.Int {
 			d, err := strconv.Atoi(v)
 			if err != nil {
 				panic(err)
 			}
-			return d
+			return big.NewInt(int64(d))
 		})
 		scanner.Scan()
 		m.Op = parseOp(strings.TrimPrefix(scanner.Text(), "Operation: "))
@@ -52,12 +53,14 @@ func main() {
 		fmt.Println(m)
 	}
 
-	for i := 1; i <= 20; i++ {
+	for i := 1; i <= 10000; i++ {
 		for _, m := range monkeys {
 			m.Round(monkeys)
 		}
+		fmt.Printf("== After round %d ==\n", i)
 		for i, m := range monkeys {
-			fmt.Printf("Monkey %d: %s\n", i, strings.Join(doMap(m.items, func(v int) string { return strconv.Itoa(v) }), ", "))
+			fmt.Printf("Monkey %d inspected items %d times.\n", i, m.business)
+			// fmt.Printf("Monkey %d: %s\n", i, strings.Join(doMap(m.items, func(v int) string { return strconv.Itoa(v) }), ", "))
 		}
 	}
 
@@ -78,8 +81,8 @@ func (m *Monkey) Round(others []*Monkey) {
 
 	for _, item := range m.items {
 		m.business += 1
-		newLevel := m.Op(item) / 3
-		if newLevel%m.TestDivisibleBy == 0 {
+		newLevel := m.Op(item) // / 3
+		if big.NewInt(0).Mod(newLevel, big.NewInt(int64(m.TestDivisibleBy))).Int64() == 0 {
 			others[m.OnTrueMonkey].items = append(others[m.OnTrueMonkey].items, newLevel)
 		} else {
 			others[m.OnFalseMonkey].items = append(others[m.OnFalseMonkey].items, newLevel)
@@ -88,34 +91,33 @@ func (m *Monkey) Round(others []*Monkey) {
 	m.items = nil
 }
 
-func parseOp(op string) func(int) int {
+func parseOp(op string) func(*big.Int) *big.Int {
 	op = strings.TrimSpace(op)
 	op = strings.TrimPrefix(op, "Operation: ")
-	return func(old int) (new int) {
+	return func(old *big.Int) (new *big.Int) {
 		switch op {
 		case "new = old * 7":
-			new = old * 7
+			return big.NewInt(0).Mul(old, big.NewInt(7))
 		case "new = old + 8":
-			new = old + 8
-		case "new = old * 13":
-			new = old * 13
+			return big.NewInt(0).Add(old, big.NewInt(8))
 		case "new = old + 7":
-			new = old + 7
+			return big.NewInt(0).Add(old, big.NewInt(7))
 		case "new = old + 2":
-			new = old + 2
+			return big.NewInt(0).Add(old, big.NewInt(2))
 		case "new = old + 1":
-			new = old + 1
+			return big.NewInt(0).Add(old, big.NewInt(1))
 		case "new = old + 4":
-			new = old + 4
-		case "new = old * old":
-			new = old * old
-
-		case "new = old * 19":
-			new = old * 19
+			return big.NewInt(0).Add(old, big.NewInt(4))
 		case "new = old + 6":
-			new = old + 6
+			return big.NewInt(0).Add(old, big.NewInt(6))
 		case "new = old + 3":
-			new = old + 3
+			return big.NewInt(0).Add(old, big.NewInt(3))
+		case "new = old * 13":
+			return big.NewInt(0).Mul(old, big.NewInt(13))
+		case "new = old * old":
+			return big.NewInt(0).Mul(old, old)
+		case "new = old * 19":
+			return big.NewInt(0).Mul(old, big.NewInt(19))
 		default:
 			panic("unknown operation: " + op)
 		}

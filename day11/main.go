@@ -6,19 +6,14 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"strings"
 )
 
-type Op []string
-
-func (op Op) Run(old int) int {
-	d := lib.Ternary(op[1] == "old", old, lib.Int(op[1]))
-	return lib.Ternary(op[0] == "+", old+d, old*d)
-}
-
 type Monkey struct {
 	items           []int
-	Op              Op
+	OpOp            byte
+	OpOther         int
 	TestDivisibleBy int
 	OnTrueMonkey    int
 	OnFalseMonkey   int
@@ -40,7 +35,9 @@ func main() {
 			return lib.Int(v)
 		})
 		scanner.Scan()
-		m.Op = strings.Split(strings.TrimPrefix(scanner.Text(), "  Operation: new = old "), " ")
+		op := strings.Split(strings.TrimPrefix(scanner.Text(), "  Operation: new = old "), " ")
+		m.OpOp = op[0][0]
+		m.OpOther, _ = strconv.Atoi(op[1])
 		scanner.Scan()
 		m.TestDivisibleBy = lib.Int(lib.Last(strings.Split(scanner.Text(), " ")))
 		scanner.Scan()
@@ -78,10 +75,15 @@ func main() {
 	}
 }
 
+func (m Monkey) Calc(old int) int {
+	d := lib.Ternary(m.OpOther == 0 /* "old" */, old, m.OpOther)
+	return lib.Ternary(m.OpOp == '+', old+d, old*d)
+}
+
 func (m *Monkey) Round(others []*Monkey, product int, divideByThree bool) {
 	for _, item := range m.items {
 		m.business += 1
-		var newLevel = m.Op.Run(item)
+		var newLevel = m.Calc(item)
 		if divideByThree {
 			newLevel /= 3
 		} else {

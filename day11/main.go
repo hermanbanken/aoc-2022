@@ -9,9 +9,16 @@ import (
 	"strings"
 )
 
+type Op []string
+
+func (op Op) Run(old int) int {
+	d := lib.Ternary(op[1] == "old", old, lib.Int(op[1]))
+	return lib.Ternary(op[0] == "+", old+d, old*d)
+}
+
 type Monkey struct {
 	items           []int
-	Op              func(int) int
+	Op              Op
 	TestDivisibleBy int
 	OnTrueMonkey    int
 	OnFalseMonkey   int
@@ -33,8 +40,7 @@ func main() {
 			return lib.Int(v)
 		})
 		scanner.Scan()
-		op := strings.TrimPrefix(scanner.Text(), "  Operation: ")
-		m.Op = func(i int) int { return doOp(op, i) }
+		m.Op = strings.Split(strings.TrimPrefix(scanner.Text(), "  Operation: new = old "), " ")
 		scanner.Scan()
 		m.TestDivisibleBy = lib.Int(lib.Last(strings.Split(scanner.Text(), " ")))
 		scanner.Scan()
@@ -75,50 +81,14 @@ func main() {
 func (m *Monkey) Round(others []*Monkey, product int, divideByThree bool) {
 	for _, item := range m.items {
 		m.business += 1
-		var newLevel = m.Op(item)
+		var newLevel = m.Op.Run(item)
 		if divideByThree {
 			newLevel /= 3
 		} else {
 			newLevel %= product
 		}
-		if newLevel%m.TestDivisibleBy == 0 {
-			others[m.OnTrueMonkey].items = append(others[m.OnTrueMonkey].items, newLevel)
-		} else {
-			others[m.OnFalseMonkey].items = append(others[m.OnFalseMonkey].items, newLevel)
-		}
+		target := lib.Ternary(newLevel%m.TestDivisibleBy == 0, m.OnTrueMonkey, m.OnFalseMonkey)
+		others[target].items = append(others[m.OnTrueMonkey].items, newLevel)
 	}
 	m.items = nil
-}
-
-// lazy math; no attempt to parse needed
-func doOp(op string, old int) (new int) {
-	switch op {
-	case "new = old + 1":
-		new = old + 1
-	case "new = old + 2":
-		new = old + 2
-	case "new = old + 3":
-		new = old + 3
-	case "new = old + 4":
-		new = old + 4
-	case "new = old + 6":
-		new = old + 6
-	case "new = old + 7":
-		new = old + 7
-	case "new = old + 8":
-		new = old + 8
-
-	case "new = old * 7":
-		new = old * 7
-	case "new = old * 13":
-		new = old * 13
-	case "new = old * 19":
-		new = old * 19
-
-	case "new = old * old":
-		new = old * old
-	default:
-		panic("unknown operation: " + op)
-	}
-	return
 }

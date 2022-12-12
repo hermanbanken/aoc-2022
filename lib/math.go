@@ -35,3 +35,11 @@ func Int(s string) int {
 	}
 	return d
 }
+func Contains[T comparable](s []T, n T) bool {
+	for _, v := range s {
+		if v == n {
+			return true
+		}
+	}
+	return false
+}

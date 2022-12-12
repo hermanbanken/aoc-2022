@@ -1,28 +1,22 @@
 package lib
 
 import (
-	"bytes"
 	"fmt"
 )
 
 type Grid struct {
-	D       []byte
 	W, H    int
 	CanMove func(posA, posB int) bool
 }
 
-func (g Grid) Pos(elem byte) int {
-	return bytes.IndexByte(g.D, elem)
-}
-
-func (g Grid) Dijkstra(start int, end func(int) bool) int {
-	var dist []int = make([]int, len(g.D))
-	var prev []int = make([]int, len(g.D))
+func (g Grid) Dijkstra(start int, end func(int) bool) (distance int, heads []int, dist []int, prev []int) {
+	dist = make([]int, g.H*g.W)
+	prev = make([]int, g.H*g.W)
 	for i := range dist {
 		dist[i] = -1
 	}
 	dist[start] = 0
-	heads := []int{start}
+	heads = []int{start}
 
 	for {
 		newHeads := []int{}
@@ -30,8 +24,7 @@ func (g Grid) Dijkstra(start int, end func(int) bool) int {
 			for _, m := range g.Moves(head) {
 				if dist[m] == -1 {
 					if end(m) {
-						g.Visited(dist, prev, heads)
-						return dist[head] + 1
+						return dist[head] + 1, heads, dist, prev
 					}
 					dist[m] = dist[head] + 1
 					prev[m] = head
@@ -40,17 +33,11 @@ func (g Grid) Dijkstra(start int, end func(int) bool) int {
 			}
 		}
 		if len(newHeads) == 0 {
-			g.Visited(dist, prev, heads)
-			fmt.Println("dead end from", heads)
-			for _, h := range heads {
-				fmt.Print(string(g.D[h]))
-			}
-			fmt.Println()
 			break
 		}
 		heads = newHeads
 	}
-	return -1
+	return -1, heads, dist, prev
 }
 
 func (g Grid) Follow(prev []int, head int) (out []int) {
@@ -61,7 +48,7 @@ func (g Grid) Follow(prev []int, head int) (out []int) {
 	return
 }
 
-func (g Grid) Visited(dist []int, prev []int, heads []int) {
+func (g Grid) Visualize(dist []int, prev []int, heads []int) {
 	trail := []int{}
 	for _, h := range heads {
 		trail = append(trail, g.Follow(prev, h)...)

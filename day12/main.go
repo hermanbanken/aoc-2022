@@ -3,35 +3,26 @@ package main
 import (
 	"aoc/lib"
 	"bufio"
+	"bytes"
 	"log"
 	"strings"
 )
 
 type Grid struct {
 	lib.Grid
+	D []byte
 }
 
 func (g Grid) canMoveUp(posA, posB int) bool {
-	levelA := g.level(posA)
-	levelB := g.level(posB)
+	levelA := g.D[posA]
+	levelB := g.D[posB]
 	return levelB < levelA || lib.AbsDiff(int(levelA), int(levelB)) <= 1
 }
 
 func (g Grid) canMoveDown(posA, posB int) bool {
-	levelA := g.level(posA)
-	levelB := g.level(posB)
+	levelA := g.D[posA]
+	levelB := g.D[posB]
 	return levelB > levelA || lib.AbsDiff(int(levelA), int(levelB)) <= 1
-}
-
-func (g Grid) level(pos int) byte {
-	level := g.D[pos]
-	if level == 'S' {
-		level = 'a'
-	}
-	if level == 'E' {
-		level = 'z'
-	}
-	return level
 }
 
 func main() {
@@ -40,20 +31,29 @@ func main() {
 	scanner := bufio.NewScanner(r)
 
 	var grid Grid
+	var start, end int
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.TrimSpace(line) == "" {
-			break
+		if line := scanner.Text(); strings.TrimSpace(line) != "" {
+			grid.D = append(grid.D, line...)
+			grid.W = len(line)
 		}
-		grid.D = append(grid.D, line...)
-		grid.W = len(line)
 	}
 	grid.H = len(grid.D) / grid.W
 
+	start = bytes.IndexByte(grid.D, 'S')
+	end = bytes.IndexByte(grid.D, 'E')
+	grid.D[start] = 'a'
+	grid.D[end] = 'z'
+
 	grid.CanMove = grid.canMoveUp
-	log.Println("up", grid.Dijkstra(grid.Pos('S'), func(pos int) bool { return grid.D[pos] == 'E' }))
+	d, heads, dist, prev := grid.Dijkstra(start, func(pos int) bool { return pos == end })
+	grid.Visualize(dist, prev, heads)
+	log.Println("up", d)
+
 	grid.CanMove = grid.canMoveDown
-	log.Println("down", grid.Dijkstra(grid.Pos('E'), func(pos int) bool { return grid.D[pos] == 'a' || grid.D[pos] == 'S' }))
+	d, heads, dist, prev = grid.Dijkstra(end, func(pos int) bool { return grid.D[pos] == 'a' })
+	grid.Visualize(dist, prev, heads)
+	log.Println("down", d)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)

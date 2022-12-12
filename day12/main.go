@@ -87,14 +87,26 @@ func (g Grid) Visited(dist []int, prev []int, heads []int) {
 	}
 }
 
-func (g Grid) CanMove(levelA, levelB byte) bool {
-	if levelA == 'S' {
-		levelA = 'a'
-	}
-	if levelB == 'E' {
-		levelB = 'z'
-	}
+func (g Grid) canMoveUp(levelA, levelB byte) bool {
+	levelA = level(levelA)
+	levelB = level(levelB)
 	return levelA > levelB || lib.AbsDiff(int(levelA), int(levelB)) <= 1
+}
+
+func (g Grid) canMoveDown(levelA, levelB byte) bool {
+	levelA = level(levelA)
+	levelB = level(levelB)
+	return levelB > levelA || lib.AbsDiff(int(levelA), int(levelB)) <= 1
+}
+
+func level(level byte) byte {
+	if level == 'S' {
+		level = 'a'
+	}
+	if level == 'E' {
+		level = 'z'
+	}
+	return level
 }
 
 func (g Grid) Moves(pos int) (out []int) {
@@ -130,9 +142,12 @@ func main() {
 		grid.d = append(grid.d, line...)
 		grid.w = len(line)
 	}
-	grid.h = len(grid.d) / grid.w
+	grid.h = len(grid.d) / grid.W
 
-	log.Println(grid.Dijkstra('S', 'E'))
+	grid.CanMove = grid.canMoveUp
+	log.Println("up", grid.Dijkstra('S', func(tile byte) bool { return tile == 'E' }))
+	grid.CanMove = grid.canMoveDown
+	log.Println("down", grid.Dijkstra('E', func(tile byte) bool { return tile == 'a' || tile == 'S' }))
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)

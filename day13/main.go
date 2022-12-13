@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
+	"sort"
 )
 
 func main() {
@@ -16,52 +16,59 @@ func main() {
 
 	var index = 1
 	var sumIndexes = 0
+	var lines []string
 	for scanner.Scan() {
 		a := scanner.Text()
 		scanner.Scan()
 		b := scanner.Text()
 		scanner.Scan()
+		lines = append(lines, a, b)
 
-		if rightOrder(a, b) {
+		if compare(parse(a), parse(b)) <= 0 {
 			sumIndexes += index
 		}
 		index++
 	}
 
 	fmt.Println(sumIndexes)
+	lines = append(lines, "[[2]]", "[[6]]")
+	sort.Slice(lines, func(i, j int) bool {
+		return compare(parse(lines[i]), parse(lines[j])) <= 0
+	})
+
+	fmt.Println("\nlines:")
+	var indexA, indexB int
+	for i, l := range lines {
+		// fmt.Println(i, ":", l)
+		if l == "[[2]]" {
+			indexA = i + 1
+		}
+		if l == "[[6]]" {
+			indexB = i + 1
+		}
+	}
+	fmt.Println((indexA) * (indexB))
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func rightOrder(astr, bstr string) (res bool) {
+func parse(str string) (out interface{}) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println(e, astr, bstr)
-			res = false
+			fmt.Println(e, str)
 		}
 	}()
 
-	var a, b interface{}
-	err := json.Unmarshal([]byte(astr), &a)
+	err := json.Unmarshal([]byte(str), &out)
 	if err != nil {
 		panic(err)
 	}
-	err = json.Unmarshal([]byte(bstr), &b)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(astr)
-	fmt.Println(bstr)
-	v := isLess(a, b)
-	fmt.Println(v)
-	fmt.Println()
-	return v <= 0
+	return
 }
 
-func isLess(a interface{}, b interface{}) int {
+func compare(a interface{}, b interface{}) int {
 	fa, AisFloat := a.(float64)
 	fb, BisFloat := b.(float64)
 	if AisFloat && BisFloat {
@@ -74,8 +81,8 @@ func isLess(a interface{}, b interface{}) int {
 		if len(la) == 0 {
 			return -1
 		}
-		fmt.Println("compare", la[0], lb[0])
-		if result := isLess(la[0], lb[0]); result != 0 {
+		// fmt.Println("compare", la[0], lb[0])
+		if result := compare(la[0], lb[0]); result != 0 {
 			return result
 		}
 		la = la[1:]
@@ -84,12 +91,12 @@ func isLess(a interface{}, b interface{}) int {
 	if len(la) == 0 {
 		return 0
 	}
-	fmt.Println("a continues")
+	// fmt.Println("a continues")
 	return 1
 }
 
 func compareF(a, b int) int {
-	fmt.Println("compareF", a, b)
+	// fmt.Println("compareF", a, b)
 	if a < b {
 		return -1
 	}
@@ -97,52 +104,6 @@ func compareF(a, b int) int {
 		return 1
 	}
 	return 0
-}
-
-func itemRest(elem interface{}) (*int, []interface{}) {
-	switch v := elem.(type) {
-	case float64:
-		vf := int(v)
-		return &vf, nil
-	case []interface{}:
-		if len(v) > 0 {
-			d, rest := itemRest(v[0])
-			rest = append(rest, v[1:]...)
-			return d, rest
-		}
-		return nil, nil
-	default:
-		panic(reflect.TypeOf(v))
-	}
-}
-
-func intOrDefault(v *int) int {
-	if v == nil {
-		return -1
-	}
-	return *v
-}
-
-func rightOrderL(a, b interface{}) int {
-	ahead, arest := itemRest(a)
-	bhead, brest := itemRest(b)
-	fmt.Printf("comparing %+v %+v\n", intOrDefault(ahead), intOrDefault(bhead))
-	if ahead == nil && bhead != nil {
-		return -1
-	} else if ahead != nil && bhead == nil {
-		return 1
-	} else if ahead == nil && bhead == nil {
-		fmt.Println("same length", arest, brest, a, b)
-		return 0
-	}
-
-	if *ahead < *bhead {
-		return -1
-	}
-	if *ahead > *bhead {
-		return 1
-	}
-	return rightOrderL(arest, brest)
 }
 
 func asList(elem interface{}) []interface{} {
@@ -153,35 +114,3 @@ func asList(elem interface{}) []interface{} {
 		return []interface{}{v}
 	}
 }
-
-type kindPair struct {
-	a reflect.Kind
-	b reflect.Kind
-}
-
-/*
-	for {
-
-		var ai, bi = 0, 0
-		alist := asList(a)
-		blist := asList(b)
-
-		if ai >= len(alist) {
-			break
-		}
-		if bi >= len(blist) {
-			break
-		}
-		if alist[ai] < blist[bi] {
-
-		}
-
-		kinds := kindPair{a: reflect.TypeOf(a).Kind(), b: reflect.TypeOf(b).Kind()}
-		switch kinds {
-		case kindPair{a: reflect.Int, b: reflect.Int}:
-		case kindPair{a: reflect.Slice, b: reflect.Slice}:
-
-		case kindPair{a: reflect.Int, b: reflect.Slice}:
-		case kindPair{a: reflect.Slice, b: reflect.Int}:
-		}
-	}*/

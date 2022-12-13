@@ -24,18 +24,19 @@ func main() {
 		scanner.Scan()
 		lines = append(lines, a, b)
 
+		// Part 1
 		if compare(parse(a), parse(b)) <= 0 {
 			sumIndexes += index
 		}
 		index++
 	}
-
 	fmt.Println(sumIndexes)
+
+	// Part 2
 	lines = append(lines, "[[2]]", "[[6]]")
 	sort.Slice(lines, func(i, j int) bool {
 		return compare(parse(lines[i]), parse(lines[j])) <= 0
 	})
-
 	fmt.Println("\nlines:")
 	var indexA, indexB int
 	for i, l := range lines {

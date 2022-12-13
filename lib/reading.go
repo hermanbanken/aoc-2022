@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"os"
@@ -20,4 +21,25 @@ func Reader() io.ReadCloser {
 		log.Fatal(err)
 	}
 	return file
+}
+
+func Lines() (lines []string) {
+	r := Reader()
+	defer r.Close()
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return
+}
+
+func EachLine(fn func(line string)) {
+	r := Reader()
+	defer r.Close()
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		fn(scanner.Text())
+	}
 }

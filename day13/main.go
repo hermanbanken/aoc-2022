@@ -2,34 +2,28 @@ package main
 
 import (
 	"aoc/lib"
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
+	"strings"
 )
 
 func main() {
-	r := lib.Reader()
-	defer r.Close()
-	scanner := bufio.NewScanner(r)
-
-	var index = 1
-	var sumIndexes = 0
 	var lines []string
-	for scanner.Scan() {
-		a := scanner.Text()
-		scanner.Scan()
-		b := scanner.Text()
-		scanner.Scan()
-		lines = append(lines, a, b)
 
-		// Part 1
-		if compare(parse(a), parse(b)) <= 0 {
-			sumIndexes += index
+	// Part 1
+	var sumIndexes = 0
+	lib.EachLine(func(line string) {
+		if strings.TrimSpace(line) == "" {
+			return
 		}
-		index++
-	}
+		lines = append(lines, line)
+		if len(lines) > 0 && len(lines)%2 == 0 {
+			if compare(parse(lines[len(lines)-2]), parse(lines[len(lines)-1])) <= 0 {
+				sumIndexes += len(lines) / 2
+			}
+		}
+	})
 	fmt.Println(sumIndexes)
 
 	// Part 2
@@ -49,23 +43,10 @@ func main() {
 		}
 	}
 	fmt.Println((indexA) * (indexB))
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func parse(str string) (out interface{}) {
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Println(e, str)
-		}
-	}()
-
-	err := json.Unmarshal([]byte(str), &out)
-	if err != nil {
-		panic(err)
-	}
+	lib.Must(json.Unmarshal([]byte(str), &out))
 	return
 }
 
@@ -73,14 +54,14 @@ func compare(a interface{}, b interface{}) int {
 	fa, AisFloat := a.(float64)
 	fb, BisFloat := b.(float64)
 	if AisFloat && BisFloat {
-		return compareF(int(fa), int(fb))
+		return compareInt(int(fa), int(fb))
 	}
 	la := asList(a)
 	lb := asList(b)
 
 	for len(lb) > 0 {
 		if len(la) == 0 {
-			return -1
+			return -1 // a ran out
 		}
 		// fmt.Println("compare", la[0], lb[0])
 		if result := compare(la[0], lb[0]); result != 0 {
@@ -90,21 +71,14 @@ func compare(a interface{}, b interface{}) int {
 		lb = lb[1:]
 	}
 	if len(la) == 0 {
-		return 0
+		return 0 // equal, continue
 	}
-	// fmt.Println("a continues")
-	return 1
+	return 1 // a continues, b ran out
 }
 
-func compareF(a, b int) int {
-	// fmt.Println("compareF", a, b)
-	if a < b {
-		return -1
-	}
-	if a > b {
-		return 1
-	}
-	return 0
+func compareInt(a, b int) int {
+	// fmt.Println("compareInt", a, b)
+	return lib.Ternary(a > b, 1, 0) - lib.Ternary(a < b, 1, 0)
 }
 
 func asList(elem interface{}) []interface{} {

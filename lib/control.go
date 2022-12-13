@@ -22,3 +22,9 @@ func ErrOnly2(_, _ interface{}, err error) error {
 func ErrOnly3(_, _, _ interface{}, err error) error {
 	return err
 }
+
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

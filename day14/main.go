@@ -38,16 +38,17 @@ func main() {
 
 	for {
 		particle := Particle{sand}
-		for particle.Y <= maxy && particle.Down(paths, filled) {
-			// log.Println("at", particle)
-			// time.Sleep(10 * time.Millisecond)
+		for particle.Down(paths, filled) && particle.Coord != sand && particle.Y < maxy+1 {
 		}
-		if particle.Y > maxy {
+		filled = append(filled, particle.Coord)
+		if len(filled)%1000 == 0 {
+			log.Println(len(filled))
+		}
+		if particle.Coord == sand {
 			log.Println("done", len(filled))
 			break
 		}
 		// log.Println("deposited at", particle)
-		filled = append(filled, particle.Coord)
 		// time.Sleep(1 * time.Second)
 	}
 

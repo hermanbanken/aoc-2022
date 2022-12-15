@@ -92,6 +92,12 @@ func (m *InfinityMap[T]) Set(c Coord, val T) {
 	m.data[c] = val
 }
 
+func (m *InfinityMap[T]) Each(fn func(T)) {
+	for _, c := range m.data {
+		fn(c)
+	}
+}
+
 func (m InfinityMap[T]) Bounds() [2]Coord {
 	return m.bounds
 }

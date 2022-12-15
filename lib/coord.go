@@ -92,9 +92,12 @@ func (m *InfinityMap[T]) Set(c Coord, val T) {
 	m.data[c] = val
 }
 
-func (m *InfinityMap[T]) Each(fn func(T)) {
+func (m *InfinityMap[T]) Each(fn func(T) bool) {
 	for _, c := range m.data {
-		fn(c)
+		cont := fn(c)
+		if !cont {
+			break
+		}
 	}
 }
 

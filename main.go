@@ -1,3 +1,4 @@
+// / Suboptimal solution that runs up to 30 minutes and uses more than 20GB of RAM to memoize.
 package main
 
 import (
@@ -13,13 +14,16 @@ type Valve struct {
 	id       string
 	flowrate int
 	dest     []string
+	destIdx  []int
 }
 
 var valves map[string]Valve = map[string]Valve{}
+var valvesIdx map[int]string = map[int]string{}
 
 func main() {
 	re := regexp.MustCompile(`Valve (.{2}) has flow rate=(\d+); tunnels? leads? to valves? (.*)`)
-	allValves := ""
+	var allValves int64 = 0
+	var idxAA = 0
 	lib.EachLine(func(line string) {
 		m := re.FindStringSubmatch(line)
 		if m == nil {
@@ -28,67 +32,53 @@ func main() {
 		valve := m[1]
 		fr := lib.Int(m[2])
 		dest := strings.Split(m[3], ", ")
-		valves[valve] = Valve{len(valves), valve, fr, dest}
+		valvesIdx[len(valves)] = valve
 		if fr > 0 {
-			allValves += valve
+			allValves |= 1 << len(valves)
 		}
+		if valve == "AA" {
+			idxAA = len(valves)
+		}
+		valves[valve] = Valve{len(valves), valve, fr, dest, nil}
 	})
+	for k, v := range valves {
+		for _, dest := range v.dest {
+			v.destIdx = append(v.destIdx, valves[dest].idx)
+		}
+		valves[k] = v
+	}
+	fmt.Println(valves)
 
-	fmt.Println(allValves)
-	s := run(quest{30, "AA", allValves})
+	fmt.Printf("%b\n", allValves)
+	s := run(quest{minutesRemaining: 26, pos: [2]int{idxAA, idxAA}, remainingValves: allValves})
 	fmt.Println(s, len(cache), hits)
 }
 
 type quest struct {
 	minutesRemaining int
-	pos              string
-	remainingValves  string
-}
-
-func flowrate(vs string) (sum int) {
-	for i := 0; i < len(vs)/2; i++ {
-		sum += valves[vs[i*2:i*2+2]].flowrate
-	}
-	return sum
+	pos              [2]int
+	blocked          [2]bool
+	remainingValves  int64
 }
 
 type solution struct {
-	valves string
-	flow   int
+	flow int
 }
 
-func addValve(vs string, v string) string {
-	return vs + v
-	// items := []string{}
-	// for i := 0; i < len(vs)-1; i += 2 {
-	// 	items = append(items, vs[i:i+2])
-	// }
-	// items = append(items, v)
-	// sort.Strings(items)
-	// return strings.Join(items, "")
-}
-
-func removeValve(vs string, v string) string {
-	src := []byte(vs)
-	dst := make([]byte, len(vs)-2)
-
-	for i := 0; i < len(src)/2; i += 1 {
-		if vs[i*2:i*2+2] == v {
-			copy(dst, src[0:i*2])
-			copy(dst[i*2:], src[i*2+2:])
-			return string(dst)
-		}
+func removeValve(vs int64, v int) int64 {
+	if !hasValve(vs, v) {
+		panic("cant remove valve")
 	}
-	panic("cant remove valve")
+	var mask int64 = ^(1 << v)
+	vs &= mask
+	if hasValve(vs, v) {
+		panic("remove valve failed")
+	}
+	return vs
 }
 
-func hasValve(vs string, v string) bool {
-	for i := 0; i < len(vs)-1; i += 2 {
-		if vs[i:i+2] == v {
-			return true
-		}
-	}
-	return false
+func hasValve(vs int64, v int) bool {
+	return vs&(1<<v) > 0
 }
 
 var hits = 0
@@ -99,29 +89,61 @@ func run(q quest) (sol solution) {
 		return solution{flow: 0}
 	}
 	if c, hasCache := cache[q]; hasCache {
+		hits++
+		if hits%(2<<20) == 0 {
+			fmt.Println(hits, len(cache))
+		}
 		return c
 	}
 
-	v := valves[q.pos]
+	p1 := q.pos[0]
+	p2 := q.pos[1]
+	v1 := valves[valvesIdx[p1]]
+	v2 := valves[valvesIdx[p2]]
 	solutions := []solution{}
 
-	for _, shouldOpen := range []bool{true, false} {
+	for _, shouldOpen := range [][]bool{{true, true}, {true, false}, {false, true}, {false, false}} {
 		var extra = 0
 		var remaining = q.remainingValves
-		if shouldOpen {
-			if !hasValve(q.remainingValves, q.pos) {
+		opens := []bool{!q.blocked[0] && shouldOpen[0], !q.blocked[1] && shouldOpen[1]}
+		if opens[0] {
+			if !hasValve(remaining, p1) {
 				continue
 			}
-			extra = lib.Ternary(shouldOpen, v.flowrate*(q.minutesRemaining-1), 0)
-			remaining = lib.Ternary(shouldOpen, removeValve(q.remainingValves, q.pos), q.remainingValves)
+			extra += v1.flowrate * (q.minutesRemaining - 1)
+			remaining = removeValve(remaining, p1)
+		}
+		if opens[1] {
+			if !hasValve(remaining, p2) {
+				continue
+			}
+			extra += v2.flowrate * (q.minutesRemaining - 1)
+			remaining = removeValve(remaining, p2)
 		}
 
 		solutions = append(solutions, solution{flow: extra})
-		for _, dest := range v.dest {
-			// fmt.Println("moving", dest)
+		var blocked [2]bool
+		possiblePos := [][2]int{}
+		for _, dest1 := range lib.Ternary(opens[0], []int{p1}, v1.destIdx) {
+			for _, dest2 := range lib.Ternary(opens[1], []int{p2}, v2.destIdx) {
+				if dest1 < dest2 {
+					possiblePos = append(possiblePos, [2]int{dest1, dest2})
+					blocked = [2]bool{opens[0], opens[1]}
+				} else {
+					possiblePos = append(possiblePos, [2]int{dest2, dest1})
+					blocked = [2]bool{opens[1], opens[0]}
+				}
+			}
+		}
+		// fmt.Println("possiblePos", possiblePos)
+		possiblePos = lib.Unique(possiblePos, func(a, b [2]int) bool { return lib.Ternary(a[0] == b[0], a[1]-b[1], a[0]-b[0]) > 0 })
+		// fmt.Println("possiblePos", possiblePos)
+
+		for _, dest := range possiblePos {
 			s := run(quest{
-				minutesRemaining: q.minutesRemaining - 1 - lib.Ternary(shouldOpen, 1, 0),
+				minutesRemaining: q.minutesRemaining - 1,
 				pos:              dest,
+				blocked:          blocked,
 				remainingValves:  remaining,
 			})
 			s.flow += extra

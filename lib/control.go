@@ -28,3 +28,9 @@ func Must(err error) {
 		panic(err)
 	}
 }
+
+func Fill[T any](s []T, v T) {
+	for i := 0; i < len(s); i++ {
+		s[i] = v
+	}
+}

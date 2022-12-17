@@ -73,9 +73,32 @@ func main() {
 	grid.Set(lib.Coord{X: 5, Y: 0}, '-')
 	grid.Set(lib.Coord{X: 6, Y: 0}, '-')
 
+	fmt.Println("repeat", len(jet)*len(rocks), len(jet))
+	beforeRepeatHeight := 0
+	iterations := 1000000000000 / 50455
+	iterationsRemainder := 1000000000000 % 50455
+	iterationHeight := 0
+
 	jetIdx := 0
-	for rockIdx := 0; rockIdx < 2022; rockIdx++ {
-		fmt.Println(rockIdx)
+	for rockIdx := 0; rockIdx < 1000000000000; rockIdx++ {
+		if rockIdx > 0 && rockIdx%(50455*4) == 0 && beforeRepeatHeight > 0 {
+			afterRepeatHeight := -grid.Bounds()[0].Y
+			iterationHeight = (afterRepeatHeight - beforeRepeatHeight) / 4
+			fmt.Println(afterRepeatHeight, beforeRepeatHeight)
+			fmt.Println("iterationHeight=", iterationHeight)
+		}
+		if rockIdx > 0 && rockIdx%(50455*4) == 0 && beforeRepeatHeight == 0 {
+			beforeRepeatHeight = -grid.Bounds()[0].Y
+			fmt.Println("beforeRepeatHeight=", beforeRepeatHeight)
+		}
+		if rockIdx%50455 == iterationsRemainder && iterationHeight > 0 {
+			fmt.Println("height=", -grid.Bounds()[0].Y+(iterations-rockIdx/50455)*iterationHeight)
+			return
+		}
+		if rockIdx%1000 == 0 {
+			progress := float64(rockIdx) * 100 / 1000000000000
+			fmt.Println(progress)
+		}
 		t := string(rocks[rockIdx%len(rocks)])
 		s := rockShapes[t]
 		// fmt.Println(grid.Bounds())

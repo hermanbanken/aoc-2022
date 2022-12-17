@@ -101,6 +101,15 @@ func (m *InfinityMap[T]) Each(fn func(T) bool) {
 	}
 }
 
+func (m *InfinityMap[T]) EachCoord(fn func(Coord, T) bool) {
+	for k, c := range m.data {
+		cont := fn(k, c)
+		if !cont {
+			break
+		}
+	}
+}
+
 func (m InfinityMap[T]) Bounds() [2]Coord {
 	return m.bounds
 }

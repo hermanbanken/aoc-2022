@@ -74,34 +74,37 @@ func main() {
 	grid.Set(lib.Coord{X: 6, Y: 0}, '-')
 
 	fmt.Println("repeat", len(jet)*len(rocks), len(jet))
-	beforeRepeatHeight := 0
-	iterations := 1000000000000 / 50455
-	iterationsRemainder := 1000000000000 % 50455
-	iterationHeight := 0
+	// beforeRepeatHeight := 0
+	// iterations := 1000000000000 / 50455
+	// iterationsRemainder := 1000000000000 % 50455
+	// iterationHeight := 0
 
+	lastLine := 0
+	var lastLine524 struct {
+		rocks int
+		y     int
+	}
+	var repeats struct {
+		rocks int
+		y     int
+	}
+
+	extra := 0
 	jetIdx := 0
 	for rockIdx := 0; rockIdx < 1000000000000; rockIdx++ {
-		if rockIdx > 0 && rockIdx%(50455*4) == 0 && beforeRepeatHeight > 0 {
-			afterRepeatHeight := -grid.Bounds()[0].Y
-			iterationHeight = (afterRepeatHeight - beforeRepeatHeight) / 4
-			fmt.Println(afterRepeatHeight, beforeRepeatHeight)
-			fmt.Println("iterationHeight=", iterationHeight)
-		}
-		if rockIdx > 0 && rockIdx%(50455*4) == 0 && beforeRepeatHeight == 0 {
-			beforeRepeatHeight = -grid.Bounds()[0].Y
-			fmt.Println("beforeRepeatHeight=", beforeRepeatHeight)
-		}
-		if rockIdx%50455 == iterationsRemainder && iterationHeight > 0 {
-			fmt.Println("height=", -grid.Bounds()[0].Y+(iterations-rockIdx/50455)*iterationHeight)
-			return
+		if repeats.y > 0 {
+			fmt.Println("repeats", repeats)
+			cycles := (1000000000000 - rockIdx) / repeats.rocks
+			rockIdx += cycles * repeats.rocks
+			extra += cycles * repeats.y
 		}
 		if rockIdx%1000 == 0 {
-			progress := float64(rockIdx) * 100 / 1000000000000
-			fmt.Println(progress)
+			// progress := float64(rockIdx) * 100 / 1000000000000
+			// fmt.Println(progress)
 		}
+
 		t := string(rocks[rockIdx%len(rocks)])
 		s := rockShapes[t]
-		// fmt.Println(grid.Bounds())
 		s.origin.Y = grid.Bounds()[0].Y - 4 - s.Bounds()[1].Y
 		s.origin.X = 2
 
@@ -131,22 +134,50 @@ func main() {
 			} else {
 				// fmt.Println("done")
 				s.AddTo(&grid)
+
+				// loop detection
+				if repeats.y == 0 {
+					if line := hasLine(grid, s.AsGrid().Bounds()); line != 0 {
+						fmt.Println("line interval", line-lastLine)
+						if line-lastLine == -524 && lastLine524.rocks > 0 {
+							repeats.rocks = rockIdx - lastLine524.rocks
+							repeats.y = -grid.Bounds()[0].Y - lastLine524.y
+						}
+						if line-lastLine == -524 {
+							lastLine524.rocks = rockIdx
+							lastLine524.y = -grid.Bounds()[0].Y
+						}
+						lastLine = line
+					}
+				}
+
 				break
 			}
-			// // done after fall?
-			// if s.Intersects(lib.Coord{X: 0, Y: 1}, grid) {
-			// 	fmt.Println("done")
-			// 	s.AddTo(grid)
-			// 	break
-			// }
 		}
 		// fmt.Println(visualize(grid, s.AsGrid()))
 	}
-	// fmt.Println(visualize(grid, lib.InfinityMap[byte]{}))
-	fmt.Println(grid.Bounds())
-	_ = jet
-	_ = rocks
-	_ = rockShapes
+
+	if len(jet) < 50 {
+		fmt.Println(visualize(grid, lib.InfinityMap[byte]{}))
+	}
+	fmt.Println("height", -grid.Bounds()[0].Y+extra)
+}
+
+func hasLine(grid lib.InfinityMap[byte], area [2]lib.Coord) int {
+	for y := area[0].Y; y <= area[1].Y; y++ {
+		allFilled := true
+		for x := 0; x <= 6; x++ {
+			_, filled := grid.Get(lib.Coord{X: x, Y: y})
+			allFilled = allFilled && filled
+			if !filled {
+				break
+			}
+		}
+		if allFilled {
+			return y
+		}
+	}
+	return 0
 }
 
 func visualize(grid ...lib.InfinityMap[byte]) string {

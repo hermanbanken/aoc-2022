@@ -4,6 +4,7 @@ import (
 	"aoc/lib"
 	"fmt"
 	"regexp"
+	"sort"
 )
 
 type BP struct {
@@ -41,6 +42,22 @@ type State struct {
 	Geode    int
 }
 
+func (s State) Less(other State) bool {
+	if s.GeodeRobot != other.GeodeRobot {
+		return s.GeodeRobot < other.GeodeRobot
+	}
+	if s.ObsidianRobot != other.ObsidianRobot {
+		return s.ObsidianRobot < other.ObsidianRobot
+	}
+	if s.ClayRobot != other.ClayRobot {
+		return s.ClayRobot < other.ClayRobot
+	}
+	if s.OreRobot != other.OreRobot {
+		return s.OreRobot < other.OreRobot
+	}
+	return false
+}
+
 func (s State) MineMineralsInto(dest State) State {
 	dest.T++
 	dest.Ore += s.OreRobot
@@ -55,8 +72,30 @@ func (s State) Mod(fn func(*State)) State {
 	return s
 }
 
+// func FeasibleGeodes(geodes int, bp BP) (bool, State) {
+// 	bp.GeodeRobotObsidian
+// 	bp.GeodeRobotOre
+// 	State{T: T-1, Geode: }
+
+// 	mineOnly := s
+// 	for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
+// 		s.MineMineralsInto(mineOnly)
+// 	}
+// 	if mineOnly.Gt(desired) {
+// 		return true, mineOnly
+// 	}
+// }
+// func (s State) Feasible(desired State) (bool, State) {
+// 	mineOnly := s
+// 	for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
+// 		s.MineMineralsInto(mineOnly)
+// 	}
+// 	if mineOnly.Gt(desired) {
+// 		return true, mineOnly
+// 	}
+// }
+
 func (s State) Build(bp BP) (out []State) {
-	out = append(out, s)
 	if s.Ore >= bp.OreRobotOre {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.OreRobotOre
@@ -76,12 +115,16 @@ func (s State) Build(bp BP) (out []State) {
 			s.ObsidianRobot += 1
 		}).Build(bp)...)
 	}
+	//TODO why not adding geodes bots?
 	if s.Ore >= bp.GeodeRobotOre && s.Obsidian >= bp.GeodeRobotObsidian {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.GeodeRobotOre
 			s.Obsidian -= bp.GeodeRobotObsidian
 			s.GeodeRobot += 1
 		}).Build(bp)...)
+	}
+	if len(out) == 0 {
+		out = append(out, s)
 	}
 	return out
 }
@@ -128,6 +171,7 @@ func main() {
 func maxGeodes(bp BP) int {
 
 	states := []State{{T: 0, OreRobot: 1}}
+	max := 0
 	for t := 0; t <= 24; t++ {
 		newstates := map[State]State{}
 		for _, oldstate := range states {
@@ -136,10 +180,30 @@ func maxGeodes(bp BP) int {
 			}
 		}
 		states = nil
+		max = 0
 		for _, state := range newstates {
 			states = append(states, state)
+			if max < state.Geode {
+				max = state.Geode
+			}
 		}
-		fmt.Println("t", t, "states", len(states))
+		fmt.Println("t", t, "states", len(states), "max", max)
+		sort.Sort(StateSlice(states))
+		if len(states) > 20 {
+			states = states[0:20]
+		}
 	}
-	return 0
+	return max
+}
+
+type StateSlice []State
+
+func (ss StateSlice) Len() int { return len(ss) }
+func (ss StateSlice) Less(i, j int) bool {
+	return ss[i].Less(ss[j])
+}
+func (ss StateSlice) Swap(i, j int) {
+	tmp := ss[i]
+	ss[i] = ss[j]
+	ss[j] = tmp
 }

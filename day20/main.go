@@ -12,38 +12,47 @@ type Num struct {
 
 func main() {
 	nums := []*Num{}
+	idxs := []int{}
 	idx := 0
 	lib.EachLine(func(line string) {
 		nums = append(nums, &Num{originalIdx: idx, value: lib.Int(line)})
+		idxs = append(idxs, idx)
 		idx++
 	})
 
-	circ := []*Num{}
-	for i := range nums {
-		circ = append(circ, nums[i])
+	circ := make([]*Num, len(nums))
+	copy(circ, nums)
+
+	print := func() {
+		for i := range circ {
+			fmt.Print(circ[i].value, ", ")
+		}
+		fmt.Println()
 	}
+
+	print()
 	for i := range nums {
 		num := nums[i]
 		pos := indexOf(circ, num)
-		newPos := (pos + num.value)
-		if newPos >= len(nums) {
-			newPos %= len(nums)
-			newPos += 1
-		}
+		// log.Println("pos", pos, "idxs[i]", idxs[i])
+		newPos := (pos + num.value) % (len(nums) - 1)
 		if newPos < 0 {
-			// log.Println("neg", num.value, newPos, newPos%len(nums)+len(nums))
-			newPos %= len(nums)
 			newPos += len(nums) - 1
 		}
-		// log.Println(circ, num.value, "m", pos, "->", newPos)
-		if pos != newPos {
-			circ = add(remove(circ, pos), newPos, num)
+		if newPos == 0 {
+			newPos = len(nums) - 1
 		}
-		// for i := range circ {
-		// 	fmt.Print(circ[i].value, ", ")
-		// }
-		// fmt.Println()
+		dir := lib.Ternary(pos > newPos, -1, 1)
+		for p := pos; p != newPos; p += dir {
+			if p < p+dir {
+				swap(circ, idxs, p, p+dir)
+			} else {
+				swap(circ, idxs, p+dir, p)
+			}
+		}
+		// print()
 	}
+	print()
 
 	for i := range circ {
 		if circ[i].value == 0 {
@@ -52,6 +61,14 @@ func main() {
 		}
 	}
 	// not 1608 -8025 3733 => -2684
+}
+
+func swap(list []*Num, idxs []int, i, j int) {
+	tmp := list[i]
+	list[i] = list[j]
+	list[j] = tmp
+	idxs[i] += 1
+	idxs[j] -= 1
 }
 
 func indexOf(list []*Num, el *Num) int {

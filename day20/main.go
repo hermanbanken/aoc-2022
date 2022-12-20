@@ -81,18 +81,3 @@ func indexOf(list []*Num, el *Num) int {
 	}
 	panic("not found")
 }
-
-func remove(list []*Num, idx int) []*Num {
-	removed := append(list[0:idx], list[idx+1:]...)
-	// log.Println(removed, "removed")
-	return removed
-}
-
-func add(list []*Num, idx int, new *Num) []*Num {
-	res := make([]*Num, len(list)+1)
-	copy(res[0:idx], list[0:idx])
-	res[idx] = new
-	copy(res[idx+1:], list[idx:])
-	// log.Println(res, "added")
-	return res
-}

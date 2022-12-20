@@ -7,7 +7,7 @@ import (
 
 type Num struct {
 	originalIdx int
-	value       int
+	value       int64
 }
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 	idxs := []int{}
 	idx := 0
 	lib.EachLine(func(line string) {
-		nums = append(nums, &Num{originalIdx: idx, value: lib.Int(line)})
+		nums = append(nums, &Num{originalIdx: idx, value: lib.Int64(line) * 811589153})
 		idxs = append(idxs, idx)
 		idx++
 	})
@@ -31,26 +31,28 @@ func main() {
 	}
 
 	print()
-	for i := range nums {
-		num := nums[i]
-		pos := indexOf(circ, num)
-		// log.Println("pos", pos, "idxs[i]", idxs[i])
-		newPos := (pos + num.value) % (len(nums) - 1)
-		if newPos < 0 {
-			newPos += len(nums) - 1
-		}
-		if newPos == 0 {
-			newPos = len(nums) - 1
-		}
-		dir := lib.Ternary(pos > newPos, -1, 1)
-		for p := pos; p != newPos; p += dir {
-			if p < p+dir {
-				swap(circ, idxs, p, p+dir)
-			} else {
-				swap(circ, idxs, p+dir, p)
+	for round := 0; round < 10; round++ {
+		for i := range nums {
+			num := nums[i]
+			pos := int64(indexOf(circ, num))
+			// log.Println("pos", pos, "idxs[i]", idxs[i])
+			newPos := (int64(pos) + num.value) % int64(len(nums)-1)
+			if newPos < 0 {
+				newPos += int64(len(nums) - 1)
 			}
+			if newPos == 0 {
+				newPos = int64(len(nums) - 1)
+			}
+			dir := lib.Ternary(pos > newPos, int64(-1), int64(1))
+			for p := pos; p != newPos; p += dir {
+				if p < p+dir {
+					swap(circ, idxs, int(p), int(p+dir))
+				} else {
+					swap(circ, idxs, int(p+dir), int(p))
+				}
+			}
+			// print()
 		}
-		// print()
 	}
 	print()
 

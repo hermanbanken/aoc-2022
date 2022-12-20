@@ -35,6 +35,13 @@ func Int(s string) int {
 	}
 	return d
 }
+func Int64(s string) int64 {
+	d, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
 func Contains[T comparable](s []T, n T) bool {
 	for _, v := range s {
 		if v == n {

@@ -58,13 +58,27 @@ func (s State) Less(other State) bool {
 	return false
 }
 
-func (s State) MineMineralsInto(dest State) State {
-	dest.T++
-	dest.Ore += s.OreRobot
-	dest.Clay += s.ClayRobot
-	dest.Obsidian += s.ObsidianRobot
-	dest.Geode += s.GeodeRobot
-	return dest
+func (s State) MineMineralsInto(bp BP) func(dest State) State {
+	return func(dest State) State {
+		dest.T++
+		dest.Previous = &s
+		dest.Ore += s.OreRobot
+		dest.Clay += s.ClayRobot
+		dest.Obsidian += s.ObsidianRobot
+		dest.Geode += s.GeodeRobot
+
+		// Set dest to INFINITY (maxInt) if were never running out again
+		if dest.Ore >= (minutes-dest.T-1)*max(bp.OreRobotOre, bp.ClayRobotOre, bp.ObsidianRobotOre, bp.GeodeRobotOre) {
+			dest.Ore = lib.Infinity
+		}
+		if dest.Clay >= (minutes-dest.T-1)*bp.ObsidianRobotClay {
+			dest.Clay = lib.Infinity
+		}
+		if dest.Obsidian >= (minutes-dest.T-1)*bp.GeodeRobotObsidian {
+			dest.Obsidian = lib.Infinity
+		}
+		return dest
+	}
 }
 
 func (s State) Mod(fn func(*State)) State {
@@ -72,60 +86,90 @@ func (s State) Mod(fn func(*State)) State {
 	return s
 }
 
+func (s State) String() (out string) {
+	if s.Previous != nil {
+		out = s.Previous.String() + " -> \n"
+	}
+	out += fmt.Sprintf("%#v (%d)", s, s.Geode)
+	return out
+}
+
 // func FeasibleGeodes(geodes int, bp BP) (bool, State) {
 // 	bp.GeodeRobotObsidian
 // 	bp.GeodeRobotOre
 // 	State{T: T-1, Geode: }
 
-// 	mineOnly := s
-// 	for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
-// 		s.MineMineralsInto(mineOnly)
-// 	}
-// 	if mineOnly.Gt(desired) {
-// 		return true, mineOnly
-// 	}
-// }
-// func (s State) Feasible(desired State) (bool, State) {
-// 	mineOnly := s
-// 	for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
-// 		s.MineMineralsInto(mineOnly)
-// 	}
-// 	if mineOnly.Gt(desired) {
-// 		return true, mineOnly
-// 	}
-// }
+//		mineOnly := s
+//		for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
+//			s.MineMineralsInto(mineOnly)
+//		}
+//		if mineOnly.Gt(desired) {
+//			return true, mineOnly
+//		}
+//	}
+//
+//	func (s State) Feasible(desired State) (bool, State) {
+//		mineOnly := s
+//		for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
+//			s.MineMineralsInto(mineOnly)
+//		}
+//		if mineOnly.Gt(desired) {
+//			return true, mineOnly
+//		}
+//	}
+func (s State) NeedOreRobot(bp BP) bool {
+	return minutes-s.T > 2 // TODO check if we dont already have plenty!
+}
+func (s State) NeedClayRobot(bp BP) bool {
+	return minutes-s.T > 6 // TODO check if we dont already have plenty!
+}
+func (s State) NeedObsidianRobot(bp BP) bool {
+	return minutes-s.T > 4 // TODO check if we dont already have plenty!
+}
+func (s State) NeedGeodeRobot(bp BP) bool {
+	return minutes-s.T > 2
+}
+
+const minutes = 24
 
 func (s State) Build(bp BP) (out []State) {
-	if s.Ore >= bp.OreRobotOre {
+	// defer func() {
+	// 	fmt.Printf("%+v -> [%d][\n", s, len(out))
+	// 	for _, o := range out {
+	// 		fmt.Printf("%+v\n", o)
+	// 	}
+	// 	fmt.Println("]")
+	// }()
+
+	if s.Ore >= bp.OreRobotOre && s.Ore < lib.Infinity {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.OreRobotOre
 			s.OreRobot += 1
-		}).Build(bp)...)
+		}) /*.Build(bp)...*/)
 	}
-	if s.Ore >= bp.ClayRobotOre {
+	if s.Ore >= bp.ClayRobotOre && s.Clay < lib.Infinity {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.ClayRobotOre
 			s.ClayRobot += 1
-		}).Build(bp)...)
+		}) /*.Build(bp)...*/)
 	}
-	if s.Ore >= bp.ObsidianRobotOre && s.Clay >= bp.ObsidianRobotClay {
+	if s.Ore >= bp.ObsidianRobotOre && s.Clay >= bp.ObsidianRobotClay && s.Obsidian < lib.Infinity {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.ObsidianRobotOre
 			s.Clay -= bp.ObsidianRobotClay
 			s.ObsidianRobot += 1
-		}).Build(bp)...)
+		}) /*.Build(bp)...*/)
 	}
 	//TODO why not adding geodes bots?
-	if s.Ore >= bp.GeodeRobotOre && s.Obsidian >= bp.GeodeRobotObsidian {
+	if s.Ore >= bp.GeodeRobotOre && s.Obsidian >= bp.GeodeRobotObsidian && s.T < minutes-2 {
 		out = append(out, s.Mod(func(s *State) {
 			s.Ore -= bp.GeodeRobotOre
 			s.Obsidian -= bp.GeodeRobotObsidian
 			s.GeodeRobot += 1
-		}).Build(bp)...)
+		}) /*.Build(bp)...*/)
 	}
-	if len(out) == 0 {
-		out = append(out, s)
-	}
+
+	out = lib.UniqueUsingKey(append(out, s))
 	return out
 }
 
@@ -169,30 +213,29 @@ func main() {
 }
 
 func maxGeodes(bp BP) int {
-
 	states := []State{{T: 0, OreRobot: 1}}
 	max := 0
-	for t := 0; t <= 24; t++ {
-		newstates := map[State]State{}
+	var maxState State
+	for t := 0; t < 20; t++ {
+		newstates := []State{}
 		for _, oldstate := range states {
-			for _, newstate := range lib.Map(oldstate.Build(bp), func(after State) State { return oldstate.MineMineralsInto(after) }) {
-				newstates[newstate] = newstate
-			}
+			newstates = append(newstates, lib.Map(oldstate.Build(bp), oldstate.MineMineralsInto(bp))...)
 		}
-		states = nil
+		states = lib.UniqueUsingKey(newstates)
 		max = 0
 		for _, state := range newstates {
-			states = append(states, state)
 			if max < state.Geode {
 				max = state.Geode
+				maxState = state
 			}
 		}
 		fmt.Println("t", t, "states", len(states), "max", max)
 		sort.Sort(StateSlice(states))
-		if len(states) > 20 {
-			states = states[0:20]
-		}
+		// if len(states) > 20 {
+		// 	states = states[0:20]
+		// }
 	}
+	fmt.Println(maxState)
 	return max
 }
 
@@ -206,4 +249,13 @@ func (ss StateSlice) Swap(i, j int) {
 	tmp := ss[i]
 	ss[i] = ss[j]
 	ss[j] = tmp
+}
+
+func max(ss ...int) (max int) {
+	for _, s := range ss {
+		if s > max {
+			max = s
+		}
+	}
+	return max
 }

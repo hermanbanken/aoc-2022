@@ -24,14 +24,25 @@ func (g Set) Size() (count int) {
 	return
 }
 
-func Unique[T comparable](t []T, fn func(T, T) bool) (out []T) {
+func Unique[T comparable](t []T, lessFn func(T, T) bool) (out []T) {
 	sort.Slice(t, func(i, j int) bool {
-		return fn(t[i], t[j])
+		return lessFn(t[i], t[j])
 	})
 	for i := 0; i < len(t); i++ {
 		if i == 0 || t[i] != out[len(out)-1] {
 			out = append(out, t[i])
 		}
+	}
+	return
+}
+
+func UniqueUsingKey[T comparable](t []T) (out []T) {
+	v := map[T]bool{}
+	for _, t := range t {
+		v[t] = true
+	}
+	for k := range v {
+		out = append(out, k)
 	}
 	return
 }

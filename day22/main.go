@@ -27,22 +27,29 @@ func (m M) nextPos() lib.Coord {
 	// TODO horse-jump => rotate 2
 	// TODO horse-jump + diagonal
 
-	round := lib.Coord{X: m.pos.X/m.Dim, Y: m.pos.Y/m.Dim}
-	mod := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
-	flip := lib.Coord{X: m.Dim - m.pos.X % m.Dim, Y: m.Dim - m.pos.Y % m.Dim}
+	round := lib.Coord{X: m.pos.X / m.Dim, Y: m.pos.Y / m.Dim}
+	modv := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
+	flip := lib.Coord{X: m.Dim - m.pos.X%m.Dim, Y: m.Dim - m.pos.Y%m.Dim}
 
 	// diagonal walk
-	dir1 := dir(m.facing).AddR(dir(m.facing-1))
-	dir2 := dir(m.facing).AddR(dir(m.facing+1))
+	mod(m.pos.AddR(dir(m.facing-1).MultR(m.Dim)), m.Dim) // left point
+	mod(m.pos.AddR(dir(m.facing+1).MultR(m.Dim)), m.Dim) // right point
+	dir1 := dir(m.facing).AddR(dir(m.facing - 1))
+	dir2 := dir(m.facing).AddR(dir(m.facing + 1))
 
 	// the base point of blocks diagonal
-	d1 := round.AddR(dir(m.facing).Mult(m.Dim)).AddR(dir(m.facing-1).Mult(m.Dim)).AddR(flip)
-	d2 := round.AddR(dir(m.facing).Mult(m.Dim)).AddR(dir(m.facing+1).Mult(m.Dim)).AddR(flip)
+	d1 := round.AddR(dir(m.facing).MultR(m.Dim)).AddR(dir(m.facing - 1).MultR(m.Dim)).AddR(flip)
+	d2 := round.AddR(dir(m.facing).MultR(m.Dim)).AddR(dir(m.facing + 1).MultR(m.Dim)).AddR(flip)
 	if _, hasD1 := m.Get(d1); hasD1 {
 		m.pos.AddR(dir(m.facing))
 	}
 
-	if _, has = m.Get(p); has { /**/ }
+	if _, has = m.Get(p); has { /**/
+	}
+}
+
+func mod(c lib.Coord, dim int) lib.Coord {
+	return lib.Coord{X: c.X % dim, Y: c.Y % dim}
 }
 
 var fold0 = strings.Trim(`
@@ -58,8 +65,8 @@ CF
 D  
 `, "\n\r")
 
-_ = fold0
-_ = fold1
+// _ = fold0
+// _ = fold1
 /*
 ..D..
 .CAB.

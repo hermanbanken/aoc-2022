@@ -23,6 +23,9 @@ func (p *Coord) Mult(i int) {
 	p.X *= i
 	p.Y *= i
 }
+func (p Coord) MultR(i int) Coord {
+	return Coord{X: p.X * i, Y: p.Y * i}
+}
 func (p Coord) Diff(o Coord) int {
 	return AbsDiff(p.X, o.X) + AbsDiff(p.Y, o.Y)
 }

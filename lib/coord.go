@@ -14,6 +14,15 @@ func (p *Coord) Add(o Coord) {
 	p.X += o.X
 	p.Y += o.Y
 }
+
+func (p Coord) AddR(o Coord) Coord {
+	return Coord{X: p.X + o.X, Y: p.Y + o.Y}
+}
+
+func (p *Coord) Mult(i int) {
+	p.X *= i
+	p.Y *= i
+}
 func (p Coord) Diff(o Coord) int {
 	return AbsDiff(p.X, o.X) + AbsDiff(p.Y, o.Y)
 }

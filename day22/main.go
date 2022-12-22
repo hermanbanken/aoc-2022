@@ -9,8 +9,86 @@ import (
 
 type M struct {
 	lib.InfinityMap[int8]
+	side   byte
 	facing int
 	pos    lib.Coord
+	Dim    int
+	Fold   string
+}
+
+func (m M) nextPos() lib.Coord {
+	// straight
+	v, has := m.Get(m.pos.AddR(dir(m.facing)))
+	if has {
+		return m.pos.AddR(dir(m.facing))
+	}
+
+	// TODO diagonal => rotate 1
+	// TODO horse-jump => rotate 2
+	// TODO horse-jump + diagonal
+
+	round := lib.Coord{X: m.pos.X/m.Dim, Y: m.pos.Y/m.Dim}
+	mod := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
+	flip := lib.Coord{X: m.Dim - m.pos.X % m.Dim, Y: m.Dim - m.pos.Y % m.Dim}
+
+	// diagonal walk
+	dir1 := dir(m.facing).AddR(dir(m.facing-1))
+	dir2 := dir(m.facing).AddR(dir(m.facing+1))
+
+	// the base point of blocks diagonal
+	d1 := round.AddR(dir(m.facing).Mult(m.Dim)).AddR(dir(m.facing-1).Mult(m.Dim)).AddR(flip)
+	d2 := round.AddR(dir(m.facing).Mult(m.Dim)).AddR(dir(m.facing+1).Mult(m.Dim)).AddR(flip)
+	if _, hasD1 := m.Get(d1); hasD1 {
+		m.pos.AddR(dir(m.facing))
+	}
+
+	if _, has = m.Get(p); has { /**/ }
+}
+
+var fold0 = strings.Trim(`
+  A 
+DCE 
+  FB
+`, "\n\r")
+
+var fold1 = strings.Trim(`
+ AB
+ E 
+CF 
+D  
+`, "\n\r")
+
+_ = fold0
+_ = fold1
+/*
+..D..
+.CAB.
+..E..
+..F..
+*/
+func (m M) moveRotate() (facing int) {
+	rows := strings.Split(m.Fold, "\n")
+	_ = rows
+	strings.IndexByte(m.Fold, m.side)
+	return 0
+}
+func (m M) moveSide() (dstSide byte) {
+	switch m.side {
+	case 'A':
+		return "BECD"[m.facing]
+	case 'B':
+		return "CEAD"[m.facing]
+	case 'C':
+		return "AEBD"[m.facing]
+	case 'D':
+		return "BACF"[m.facing]
+	case 'E':
+		return "BFCA"[m.facing]
+	case 'F':
+		return "BDCE"[m.facing]
+	default:
+		panic("invalid side")
+	}
 }
 
 func main() {
@@ -36,24 +114,28 @@ func main() {
 				}
 			}
 		} else {
+			if m.Dim == 0 {
+				m.Dim = (lib.Ternary(len(line) == 150, 50, 4))
+				m.Fold = (lib.Ternary(len(line) == 150, fold1, fold0))
+			}
 			for x, c := range line {
 				if c == ' ' {
 					continue
 				}
 				if first {
 					first = false
-					m.pos.X = x + 1
-					m.pos.Y = y + 1
+					m.pos.X = x
+					m.pos.Y = y
 					m.facing = 0
 				}
-				m.Set(lib.Coord{X: x + 1, Y: y + 1}, int8(c))
+				m.Set(lib.Coord{X: x, Y: y}, int8(c))
 			}
 			y += 1
 		}
 	})
 
-	fmt.Println(steps)
-	fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
+	fmt.Println(m.Dim, steps)
+	// fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
 
 	fmt.Println(m.pos)
 	m.simulate(steps)

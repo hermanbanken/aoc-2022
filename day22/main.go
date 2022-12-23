@@ -53,7 +53,7 @@ func (m M) nextPart2() Stance {
 		np := m.pos.AddR(p.MultR(m.Dim))
 		if m.IsSet(np) {
 			log.Println("ort", dir((p.facing+4)%4))
-			return Stance{flip(np, lib.Ternary(p.facing == -1, -1, 0)+m.facing, m.Dim), (p.facing + m.facing) % 4}
+			return Stance{flip(np, lib.Ternary(p.facing == -1, 3, 1)+m.facing, m.Dim), (p.facing + m.facing) % 4}
 		}
 	}
 	for _, p := range horse(m.facing) {
@@ -83,12 +83,18 @@ func (m M) nextPart2() Stance {
 //	x  \
 func flip(p lib.Coord, facing int, dim int) (o lib.Coord) {
 	base := lib.Coord{X: p.X - p.X%dim, Y: p.Y - p.Y%dim}
-	delta := lib.Coord{X: base.X - p.X, Y: base.Y - p.Y}
-	if facing%2 == 1 { // A
-		return lib.Coord{X: base.X + delta.Y, Y: base.Y - delta.X}
+	delta := lib.Coord{X: p.X % dim, Y: p.Y % dim}
+	if facing%2 == 0 { // A
+		return lib.Coord{
+			X: base.X + (dim - delta.Y - 1),
+			Y: base.Y + (dim - delta.X - 1)}
 	}
-	// B // TODO fix this flip function!
-	return lib.Coord{X: base.X + (dim - delta.Y), Y: base.Y}
+	// B
+	return lib.Coord{
+		X: base.X + delta.Y,
+		Y: base.Y + delta.X}
+	// TODO fix this flip function!
+	// return lib.Coord{X: base.X + (dim - delta.Y), Y: base.Y}
 }
 
 func pivot(p lib.Coord, facing int, dim int) (o lib.Coord) {

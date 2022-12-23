@@ -62,8 +62,10 @@ func main() {
 
 	anyMoved := true
 	moveOffset := -1
+	var areaRound10 = 0
 	fmt.Println(m.Draw(draw) + "\n\n")
-	for i := 0; i < 10 && anyMoved; i++ {
+	round := 0
+	for ; anyMoved; round++ {
 		moveOffset += 1
 		var proposals = map[lib.Coord][]*Elf{}
 		m.EachCoord(func(c lib.Coord, e *Elf) bool {
@@ -95,12 +97,16 @@ func main() {
 			}
 		}
 		anyMoved = len(proposals) > 0
-		fmt.Println(m.Draw(draw) + "\n\n")
+		if round == 10-1 {
+			m.FreshBounds()
+			areaRound10 = (m.Width()+1)*(m.Height()+1) - m.Len()
+			fmt.Println(m.Draw(draw) + "\n\n")
+		}
 	}
-	m.FreshBounds()
 	// not 6806, but 4288
-	area := (m.Width() + 1) * (m.Height() + 1)
-	fmt.Println("part1 area", area, "count", m.Len(), "uncovered area", area-m.Len())
+	fmt.Println("part1 area", areaRound10)
+
+	fmt.Println("part2 rounds", round)
 
 }
 

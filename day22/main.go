@@ -16,6 +16,66 @@ type M struct {
 	Fold   string
 }
 
+type Stance struct {
+	lib.Coord
+	facing int
+}
+
+type Point struct {
+	X, Y, Z int
+}
+
+func (m M) OverEdge() (bool, lib.Coord) {
+	mod := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
+	switch m.facing {
+	case 0: // right
+		return mod.X == m.Dim-1, m.pos.AddR(lib.Coord{1, 0})
+	case 1: // down
+		return mod.Y == m.Dim-1, m.pos.AddR(lib.Coord{0, 1})
+	case 2: // left
+		return mod.X == 0, m.pos.AddR(lib.Coord{-1, 0})
+	case 3: // up
+		return mod.Y == 0, m.pos.AddR(lib.Coord{0, -1})
+	default:
+		panic("unknown facing")
+	}
+}
+
+func (m M) move() Stance {
+	overEdge, next := m.OverEdge()
+	_, exists := m.Get(next)
+	// regular move
+	if !overEdge || exists {
+		return Stance{next, m.facing}
+	}
+	// figure out where to go on cube space
+	for _, p := range ort(dir(m.facing)) {
+		if m.IsSet(p) {
+			// TODO pivot
+			return Stance{}
+		}
+	}
+	for _, p := range horse {
+		if m.IsSet(p) {
+			// TODO pivot
+			return Stance{}
+		}
+	}
+
+	return Stance{}
+}
+
+// horse moves:
+// xx1x1xxx
+// x1xxx1xx
+// xxx0xxxx
+// x1xxx1xx
+// xx1x1xxx
+var horse = []lib.Coord{
+	{X: 2, Y: -1}, {X: 1, Y: -2}, {X: 2, Y: 1}, {X: 1, Y: 2},
+	{X: -1, Y: 2}, {X: -2, Y: 1}, {X: -2, Y: -1}, {X: -1, Y: -2},
+}
+
 func (m M) nextPos() lib.Coord {
 	// straight
 	v, has := m.Get(m.pos.AddR(dir(m.facing)))
@@ -98,11 +158,10 @@ func (m M) moveSide() (dstSide byte) {
 	}
 }
 
-func main() {
-	m := &M{}
+func read() (m *M, steps []string) {
+	m = &M{}
 	m.SetDefault(' ')
 	var instructions bool
-	var steps []string
 	var y = 0
 	var first = true
 	lib.EachLine(func(line string) {
@@ -140,7 +199,11 @@ func main() {
 			y += 1
 		}
 	})
+	return m, steps
+}
 
+func main() {
+	m, steps := read()
 	fmt.Println(m.Dim, steps)
 	// fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
 
@@ -213,6 +276,7 @@ func (m *M) next() lib.Coord {
 	}
 	return p
 }
+
 func dir(facing int) (dir lib.Coord) {
 	switch facing {
 	case 0:
@@ -227,4 +291,12 @@ func dir(facing int) (dir lib.Coord) {
 		log.Fatalf("invalid facing %d", facing)
 	}
 	return
+}
+
+// for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
+func ort(dir lib.Coord) [2]lib.Coord {
+	if dir.X == 0 {
+		return [2]lib.Coord{{X: -1, Y: dir.Y}, {X: 1, Y: dir.Y}}
+	}
+	return [2]lib.Coord{{X: dir.X, Y: -1}, {X: dir.X, Y: 1}}
 }

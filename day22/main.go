@@ -87,8 +87,8 @@ func flip(p lib.Coord, facing int, dim int) (o lib.Coord) {
 	if facing%2 == 1 { // A
 		return lib.Coord{X: base.X + delta.Y, Y: base.Y - delta.X}
 	}
-	// B
-	return lib.Coord{X: base.X + (dim - delta.Y - 1), Y: base.Y + (dim - delta.X - 1)}
+	// B // TODO fix this flip function!
+	return lib.Coord{X: base.X + (dim - delta.Y), Y: base.Y}
 }
 
 func pivot(p lib.Coord, facing int, dim int) (o lib.Coord) {

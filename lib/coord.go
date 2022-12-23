@@ -88,20 +88,47 @@ func (m *InfinityMap[T]) Set(c Coord, val T) {
 	if len(m.data) == 0 {
 		m.bounds = [2]Coord{c, c}
 	} else {
-		if c.X < m.bounds[0].X {
-			m.bounds[0].X = c.X
-		}
-		if c.Y < m.bounds[0].Y {
-			m.bounds[0].Y = c.Y
-		}
-		if c.X > m.bounds[1].X {
-			m.bounds[1].X = c.X
-		}
-		if c.Y > m.bounds[1].Y {
-			m.bounds[1].Y = c.Y
-		}
+		m.include(c)
 	}
 	m.data[c] = val
+}
+
+func (m *InfinityMap[T]) include(c Coord) {
+	if c.X < m.bounds[0].X {
+		m.bounds[0].X = c.X
+	}
+	if c.Y < m.bounds[0].Y {
+		m.bounds[0].Y = c.Y
+	}
+	if c.X > m.bounds[1].X {
+		m.bounds[1].X = c.X
+	}
+	if c.Y > m.bounds[1].Y {
+		m.bounds[1].Y = c.Y
+	}
+}
+
+func (m *InfinityMap[T]) FreshBounds() [2]Coord {
+	var first = true
+	for c, _ := range m.data {
+		if first {
+			first = false
+			m.bounds[0] = c
+			m.bounds[1] = c
+		}
+		m.include(c)
+	}
+	return m.bounds
+}
+
+func (m *InfinityMap[T]) BoundsArea() int {
+	w := m.bounds[1].X - m.bounds[0].X
+	h := m.bounds[1].Y - m.bounds[0].Y
+	return w * h
+}
+
+func (m *InfinityMap[T]) Delete(c Coord) {
+	delete(m.data, c)
 }
 
 func (m *InfinityMap[T]) Each(fn func(T) bool) {
@@ -151,4 +178,9 @@ func (m InfinityMap[T]) Draw(fn func(T) byte) string {
 		sb.WriteByte('\n')
 	}
 	return sb.String()
+}
+
+func (m InfinityMap[T]) IsSet(c Coord) bool {
+	_, has := m.data[c]
+	return has
 }

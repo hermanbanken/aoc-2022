@@ -121,12 +121,6 @@ func (m *InfinityMap[T]) FreshBounds() [2]Coord {
 	return m.bounds
 }
 
-func (m *InfinityMap[T]) BoundsArea() int {
-	w := m.bounds[1].X - m.bounds[0].X
-	h := m.bounds[1].Y - m.bounds[0].Y
-	return w * h
-}
-
 func (m *InfinityMap[T]) Delete(c Coord) {
 	delete(m.data, c)
 }
@@ -164,8 +158,16 @@ func (m InfinityMap[T]) Get(c Coord) (T, bool) {
 	return v, true
 }
 
+func (m InfinityMap[T]) Width() int {
+	return m.bounds[1].X - m.bounds[0].X
+}
 func (m InfinityMap[T]) Height() int {
 	return m.bounds[1].Y - m.bounds[0].Y
+}
+func (m *InfinityMap[T]) BoundsArea() int {
+	w := m.bounds[1].X - m.bounds[0].X
+	h := m.bounds[1].Y - m.bounds[0].Y
+	return w * h
 }
 
 func (m InfinityMap[T]) Draw(fn func(T) byte) string {

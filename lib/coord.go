@@ -67,7 +67,7 @@ func (p *Coord) Parse(dir string) {
 }
 
 func (p Coord) String() string {
-	return strconv.Itoa(p.Y) + "," + strconv.Itoa(p.X)
+	return strconv.Itoa(p.X) + "," + strconv.Itoa(p.Y)
 }
 
 type InfinityMap[T any] struct {

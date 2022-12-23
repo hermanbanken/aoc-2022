@@ -13,7 +13,6 @@ type M struct {
 	facing int
 	pos    lib.Coord
 	Dim    int
-	Fold   string
 }
 
 type Stance struct {
@@ -41,28 +40,66 @@ func (m M) OverEdge() (bool, lib.Coord) {
 	}
 }
 
-func (m M) move() Stance {
+func (m M) nextPart2() Stance {
 	overEdge, next := m.OverEdge()
 	_, exists := m.Get(next)
 	// regular move
 	if !overEdge || exists {
+		log.Println("regular")
 		return Stance{next, m.facing}
 	}
 	// figure out where to go on cube space
 	for _, p := range ort(dir(m.facing)) {
-		if m.IsSet(p) {
-			// TODO pivot
-			return Stance{}
+		np := m.pos.AddR(p.MultR(m.Dim))
+		if m.IsSet(np) {
+			log.Println("ort", dir((p.facing+4)%4))
+			return Stance{flip(np, lib.Ternary(p.facing == -1, -1, 0)+m.facing, m.Dim), (p.facing + m.facing) % 4}
 		}
 	}
-	for _, p := range horse {
-		if m.IsSet(p) {
-			// TODO pivot
-			return Stance{}
+	for _, p := range horse(m.facing) {
+		np := m.pos.AddR(p.MultR(m.Dim))
+		if m.IsSet(np) {
+			log.Println("horse")
+			return Stance{pivot(np, m.facing, m.Dim), (m.facing + 2) % 4}
 		}
 	}
 
-	return Stance{}
+	panic("no destination available")
+}
+
+// Flip moves around this axis:
+// A:
+//
+//	x  /
+//	  /
+//	 /
+//	/   x
+//
+// B:
+//
+//	\  x
+//	 \
+//	  \
+//	x  \
+func flip(p lib.Coord, facing int, dim int) (o lib.Coord) {
+	base := lib.Coord{X: p.X - p.X%dim, Y: p.Y - p.Y%dim}
+	delta := lib.Coord{X: base.X - p.X, Y: base.Y - p.Y}
+	if facing%2 == 1 { // A
+		return lib.Coord{X: base.X + delta.Y, Y: base.Y - delta.X}
+	}
+	// B
+	return lib.Coord{X: base.X + (dim - delta.Y - 1), Y: base.Y + (dim - delta.X - 1)}
+}
+
+func pivot(p lib.Coord, facing int, dim int) (o lib.Coord) {
+	o.X = p.X
+	o.Y = p.Y
+	if facing == 1 || facing == 3 {
+		o.X = p.X/dim*dim + dim - (p.X % dim) - 1
+	} else {
+		o.Y = p.Y/dim*dim + dim - (p.Y % dim) - 1
+	}
+	return
 }
 
 // horse moves:
@@ -71,90 +108,22 @@ func (m M) move() Stance {
 // xxx0xxxx
 // x1xxx1xx
 // xx1x1xxx
-var horse = []lib.Coord{
-	{X: 2, Y: -1}, {X: 1, Y: -2}, {X: 2, Y: 1}, {X: 1, Y: 2},
-	{X: -1, Y: 2}, {X: -2, Y: 1}, {X: -2, Y: -1}, {X: -1, Y: -2},
-}
-
-func (m M) nextPos() lib.Coord {
-	// straight
-	v, has := m.Get(m.pos.AddR(dir(m.facing)))
-	if has {
-		return m.pos.AddR(dir(m.facing))
-	}
-
-	// TODO diagonal => rotate 1
-	// TODO horse-jump => rotate 2
-	// TODO horse-jump + diagonal
-
-	round := lib.Coord{X: m.pos.X / m.Dim, Y: m.pos.Y / m.Dim}
-	modv := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
-	flip := lib.Coord{X: m.Dim - m.pos.X%m.Dim, Y: m.Dim - m.pos.Y%m.Dim}
-
-	// diagonal walk
-	mod(m.pos.AddR(dir(m.facing-1).MultR(m.Dim)), m.Dim) // left point
-	mod(m.pos.AddR(dir(m.facing+1).MultR(m.Dim)), m.Dim) // right point
-	dir1 := dir(m.facing).AddR(dir(m.facing - 1))
-	dir2 := dir(m.facing).AddR(dir(m.facing + 1))
-
-	// the base point of blocks diagonal
-	d1 := round.AddR(dir(m.facing).MultR(m.Dim)).AddR(dir(m.facing - 1).MultR(m.Dim)).AddR(flip)
-	d2 := round.AddR(dir(m.facing).MultR(m.Dim)).AddR(dir(m.facing + 1).MultR(m.Dim)).AddR(flip)
-	if _, hasD1 := m.Get(d1); hasD1 {
-		m.pos.AddR(dir(m.facing))
-	}
-
-	if _, has = m.Get(p); has { /**/
-	}
-}
-
-func mod(c lib.Coord, dim int) lib.Coord {
-	return lib.Coord{X: c.X % dim, Y: c.Y % dim}
-}
-
-var fold0 = strings.Trim(`
-  A 
-DCE 
-  FB
-`, "\n\r")
-
-var fold1 = strings.Trim(`
- AB
- E 
-CF 
-D  
-`, "\n\r")
-
-// _ = fold0
-// _ = fold1
-/*
-..D..
-.CAB.
-..E..
-..F..
-*/
-func (m M) moveRotate() (facing int) {
-	rows := strings.Split(m.Fold, "\n")
-	_ = rows
-	strings.IndexByte(m.Fold, m.side)
-	return 0
-}
-func (m M) moveSide() (dstSide byte) {
-	switch m.side {
-	case 'A':
-		return "BECD"[m.facing]
-	case 'B':
-		return "CEAD"[m.facing]
-	case 'C':
-		return "AEBD"[m.facing]
-	case 'D':
-		return "BACF"[m.facing]
-	case 'E':
-		return "BFCA"[m.facing]
-	case 'F':
-		return "BDCE"[m.facing]
+// PORTAL RIGHT/LEFT => 2 down/up    1 left/right
+// PORTAL UP/DOWN    => 2 left/right 1 up/down
+func horse(facing int) []lib.Coord {
+	switch facing % 4 {
+	case 0, 2:
+		return []lib.Coord{
+			{X: 1, Y: -2}, {X: 1, Y: 2},
+			{X: -1, Y: 2}, {X: -1, Y: -2},
+		}
+	case 1, 3:
+		return []lib.Coord{
+			{X: 2, Y: -1}, {X: 2, Y: 1},
+			{X: -2, Y: 1}, {X: -2, Y: -1},
+		}
 	default:
-		panic("invalid side")
+		panic("invalid facing")
 	}
 }
 
@@ -182,7 +151,6 @@ func read() (m *M, steps []string) {
 		} else {
 			if m.Dim == 0 {
 				m.Dim = (lib.Ternary(len(line) == 150, 50, 4))
-				m.Fold = (lib.Ternary(len(line) == 150, fold1, fold0))
 			}
 			for x, c := range line {
 				if c == ' ' {
@@ -208,12 +176,15 @@ func main() {
 	// fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
 
 	fmt.Println(m.pos)
-	m.simulate(steps)
+	m.simulate(steps, true)
 	fmt.Println("part1", m.pos, 1000*m.pos.Y+4*m.pos.X+m.facing)
 
+	m, steps = read()
+	m.simulate(steps, false)
+	fmt.Println("part2", m.pos, 1000*m.pos.Y+4*m.pos.X+m.facing)
 }
 
-func (m *M) simulate(path []string) {
+func (m *M) simulate(path []string, part1 bool) {
 	if len(path) == 0 {
 		return
 	}
@@ -225,18 +196,28 @@ func (m *M) simulate(path []string) {
 		m.facing = (m.facing + 3) % 4
 	default:
 		for i := lib.Int(path[0]); i > 0; i-- {
-			n := m.next()
-			if n == m.pos {
+			var n Stance = Stance{m.pos, m.facing}
+			if part1 {
+				n = Stance{m.nextPart1(), m.facing}
+			} else {
+				stance := m.nextPart2()
+				if v, _ := m.Get(stance.Coord); v == '.' {
+					n = stance
+				}
+			}
+			if n.Coord == m.pos {
+				fmt.Println(m.pos, m.facing, "not moved")
 				break
 			}
-			m.pos = n
-			fmt.Println(m.pos)
+			m.pos = n.Coord
+			m.facing = n.facing
+			fmt.Println(m.pos, m.facing)
 		}
 	}
-	m.simulate(path[1:])
+	m.simulate(path[1:], part1)
 }
 
-func (m *M) next() lib.Coord {
+func (m *M) nextPart1() lib.Coord {
 	p := m.pos
 	p.Add(dir(m.facing))
 	v, has := m.Get(p)
@@ -294,9 +275,15 @@ func dir(facing int) (dir lib.Coord) {
 }
 
 // for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
-func ort(dir lib.Coord) [2]lib.Coord {
+func ort(dir lib.Coord) [2]Stance {
 	if dir.X == 0 {
-		return [2]lib.Coord{{X: -1, Y: dir.Y}, {X: 1, Y: dir.Y}}
+		return [2]Stance{
+			{lib.Coord{X: -1, Y: dir.Y}, lib.Ternary(dir.Y < 0, -1, 1)},
+			{lib.Coord{X: 1, Y: dir.Y}, lib.Ternary(dir.Y < 0, 1, -1)},
+		}
 	}
-	return [2]lib.Coord{{X: dir.X, Y: -1}, {X: dir.X, Y: 1}}
+	return [2]Stance{
+		{lib.Coord{X: dir.X, Y: -1}, lib.Ternary(dir.X > 0, -1, 1)},
+		{lib.Coord{X: dir.X, Y: 1}, lib.Ternary(dir.X > 0, 1, -1)},
+	}
 }

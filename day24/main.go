@@ -4,6 +4,7 @@ import (
 	"aoc/lib"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -25,10 +26,6 @@ func main() {
 	t := 0
 
 	empty := func(p int) bool {
-		if p == end {
-			fmt.Printf("done in %d minutes\n", t+1)
-			os.Exit(0)
-		}
 		if p == start || p == end {
 			return true
 		}
@@ -66,6 +63,7 @@ func main() {
 
 	pos := []int{start}
 	minTime := map[int]int{}
+	trip := 0
 	for ; t < 1000; t++ {
 		fmt.Println("Minute", t+1, len(pos))
 		blizz = lib.Map(blizz, moveBlizzard)
@@ -86,7 +84,28 @@ func main() {
 			remainingPos = append(remainingPos, np)
 			minTime[np] = t
 		}
+		sort.Ints(remainingPos)
 		pos = remainingPos
+
+		// Detection
+		if trip == 2 && pos[len(pos)-1] == end {
+			fmt.Printf("part 2 / at end in %d minutes\n", t+1)
+			visualize(g, bm, []int{end})
+			os.Exit(0)
+		}
+		if trip == 1 && pos[0] == start {
+			trip += 1
+			fmt.Printf("at start in %d minutes\n", t+1)
+			pos = []int{start}
+			visualize(g, bm, pos)
+		}
+		if trip == 0 && pos[len(pos)-1] == end {
+			trip += 1
+			fmt.Printf("part 1 / at end in %d minutes\n", t+1)
+			pos = []int{end}
+			visualize(g, bm, pos)
+		}
+
 		if cycle == 25 {
 			visualize(g, bm, remainingPos)
 		}

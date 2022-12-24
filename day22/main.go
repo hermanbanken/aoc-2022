@@ -26,7 +26,7 @@ type Point struct {
 
 func (m M) OverEdge() (bool, lib.Coord) {
 	mod := lib.Coord{X: m.pos.X % m.Dim, Y: m.pos.Y % m.Dim}
-	switch m.facing {
+	switch m.facing % 4 {
 	case 0: // right
 		return mod.X == m.Dim-1, m.pos.AddR(lib.Coord{1, 0})
 	case 1: // down
@@ -36,7 +36,7 @@ func (m M) OverEdge() (bool, lib.Coord) {
 	case 3: // up
 		return mod.Y == 0, m.pos.AddR(lib.Coord{0, -1})
 	default:
-		panic("unknown facing")
+		panic(fmt.Sprintf("unknown facing %d", m.facing))
 	}
 }
 
@@ -45,26 +45,44 @@ func (m M) nextPart2() Stance {
 	_, exists := m.Get(next)
 	// regular move
 	if !overEdge || exists {
-		log.Println("regular")
+		// log.Println("regular")
 		return Stance{next, m.facing}
 	}
 	// figure out where to go on cube space
 	for _, p := range ort(dir(m.facing)) {
 		np := m.pos.AddR(p.MultR(m.Dim))
 		if m.IsSet(np) {
-			log.Println("ort", dir((p.facing+4)%4))
-			return Stance{flip(np, lib.Ternary(p.facing == -1, 3, 1)+m.facing, m.Dim), (p.facing + m.facing) % 4}
+			// log.Println("ort", dir((p.facing+4)%4))
+			return Stance{flip(np, p.facing, m.facing, m.Dim), (p.facing + m.facing + 4) % 4}
 		}
 	}
 	for _, p := range horse(m.facing) {
 		np := m.pos.AddR(p.MultR(m.Dim))
 		if m.IsSet(np) {
-			log.Println("horse")
+			// log.Println("horse")
 			return Stance{pivot(np, m.facing, m.Dim), (m.facing + 2) % 4}
 		}
 	}
+	// top to bottom in input1.txt
+	for i, p := range ort(dir(m.facing).MultR(-3)) {
+		np := m.pos.AddR(p.MultR(m.Dim))
+		if m.IsSet(np) {
+			return Stance{flip(np, p.facing, m.facing, m.Dim), (m.facing + lib.Ternary(i == 0, 1, -1) + 4) % 4}
+		}
+	}
+	// top right 3 to bottom 3 in input1.txt
+	for _, p := range ortOffset(dir(m.facing).MultR(-3), 2) {
+		np := m.pos.AddR(p.MultR(m.Dim))
+		if m.IsSet(np) {
+			offset := np.AddR(dir(m.facing))
+			offset.X %= m.Dim
+			offset.Y %= m.Dim
+			base := lib.Coord{X: np.X - np.X%m.Dim, Y: np.Y - np.Y%m.Dim}
+			return Stance{base.AddR(offset), m.facing}
+		}
+	}
 
-	panic("no destination available")
+	panic(fmt.Sprintf("no destination available from %s facing %d\n", m.pos, m.facing))
 }
 
 // Flip moves around this axis:
@@ -81,20 +99,38 @@ func (m M) nextPart2() Stance {
 //	 \
 //	  \
 //	x  \
-func flip(p lib.Coord, facing int, dim int) (o lib.Coord) {
-	base := lib.Coord{X: p.X - p.X%dim, Y: p.Y - p.Y%dim}
-	delta := lib.Coord{X: p.X % dim, Y: p.Y % dim}
-	if facing%2 == 0 { // A
-		return lib.Coord{
-			X: base.X + (dim - delta.Y - 1),
-			Y: base.Y + (dim - delta.X - 1)}
+func flip(p lib.Coord, moveFacing, originalFacing int, dim int) (o lib.Coord) {
+	base := lib.Coord{Y: p.Y - p.Y%dim, X: p.X - p.X%dim}
+	max := lib.Coord{Y: p.Y - p.Y%dim + dim - 1, X: p.X - p.X%dim + dim - 1}
+	offset := lib.Coord{X: p.X % dim, Y: p.Y % dim}
+	switch originalFacing {
+	case 0: // right
+		if moveFacing == -1 { // ccw
+			return lib.Coord{Y: max.Y, X: base.X + offset.Y}
+		} else { // cw
+			return lib.Coord{Y: base.Y, X: max.X - offset.Y}
+		}
+	case 1: // down
+		if moveFacing == -1 { // ccw
+			return lib.Coord{Y: max.Y - offset.X, X: base.X}
+		} else { // cw
+			return lib.Coord{Y: base.Y + offset.X, X: max.X}
+		}
+	case 2: // left
+		if moveFacing == -1 { // ccw
+			return lib.Coord{X: base.X + offset.Y, Y: base.Y}
+		} else { // cw
+			return lib.Coord{X: max.X - offset.Y, Y: max.Y}
+		}
+	case 3: // up
+		if moveFacing == -1 { // ccw
+			return lib.Coord{Y: max.Y - offset.X, X: max.X}
+		} else { // cw
+			return lib.Coord{Y: base.Y + offset.X, X: base.X}
+		}
+	default:
+		panic("unknown facing")
 	}
-	// B
-	return lib.Coord{
-		X: base.X + delta.Y,
-		Y: base.Y + delta.X}
-	// TODO fix this flip function!
-	// return lib.Coord{X: base.X + (dim - delta.Y), Y: base.Y}
 }
 
 func pivot(p lib.Coord, facing int, dim int) (o lib.Coord) {
@@ -183,18 +219,21 @@ func main() {
 
 	fmt.Println(m.pos)
 	m.simulate(steps, true)
-	fmt.Println("part1", m.pos, 1000*m.pos.Y+4*m.pos.X+m.facing)
+	part1 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
+	fmt.Println("part1", part1, 1000*(part1.Y)+4*(part1.X)+m.facing)
 
 	m, steps = read()
 	m.simulate(steps, false)
-	fmt.Println("part2", m.pos, 1000*m.pos.Y+4*m.pos.X+m.facing)
+	part2 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
+	// not 106189
+	fmt.Println("part2", part2, 1000*(part2.Y)+4*(part2.X)+m.facing)
 }
 
 func (m *M) simulate(path []string, part1 bool) {
 	if len(path) == 0 {
 		return
 	}
-	fmt.Println(path[0])
+	// fmt.Println(path[0])
 	switch path[0] {
 	case "R":
 		m.facing = (m.facing + 1) % 4
@@ -212,12 +251,12 @@ func (m *M) simulate(path []string, part1 bool) {
 				}
 			}
 			if n.Coord == m.pos {
-				fmt.Println(m.pos, m.facing, "not moved")
+				// fmt.Println(m.pos, m.facing, "not moved")
 				break
 			}
 			m.pos = n.Coord
 			m.facing = n.facing
-			fmt.Println(m.pos, m.facing)
+			// fmt.Println(m.pos, m.facing)
 		}
 	}
 	m.simulate(path[1:], part1)
@@ -282,14 +321,19 @@ func dir(facing int) (dir lib.Coord) {
 
 // for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
 func ort(dir lib.Coord) [2]Stance {
+	return ortOffset(dir, 1)
+}
+
+// for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
+func ortOffset(dir lib.Coord, o int) [2]Stance {
 	if dir.X == 0 {
 		return [2]Stance{
-			{lib.Coord{X: -1, Y: dir.Y}, lib.Ternary(dir.Y < 0, -1, 1)},
-			{lib.Coord{X: 1, Y: dir.Y}, lib.Ternary(dir.Y < 0, 1, -1)},
+			{lib.Coord{X: -o, Y: dir.Y}, lib.Ternary(dir.Y < 0, -1, 1)},
+			{lib.Coord{X: o, Y: dir.Y}, lib.Ternary(dir.Y < 0, 1, -1)},
 		}
 	}
 	return [2]Stance{
-		{lib.Coord{X: dir.X, Y: -1}, lib.Ternary(dir.X > 0, -1, 1)},
-		{lib.Coord{X: dir.X, Y: 1}, lib.Ternary(dir.X > 0, 1, -1)},
+		{lib.Coord{X: dir.X, Y: -o}, lib.Ternary(dir.X > 0, -1, 1)},
+		{lib.Coord{X: dir.X, Y: o}, lib.Ternary(dir.X > 0, 1, -1)},
 	}
 }

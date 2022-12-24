@@ -26,7 +26,7 @@ func TestMove(t *testing.T) {
 
 	m.facing = 0 // right, ort, clockwise
 	m.pos = lib.Coord{X: 11, Y: 5}
-	assert.Equal(t, Stance{lib.Coord{X: 15, Y: 8}, 1}, m.nextPart2())
+	assert.Equal(t, Stance{lib.Coord{X: 14, Y: 8}, 1}, m.nextPart2())
 
 	m.facing = 3 // up, ort, anti-clockwise
 	m.pos = lib.Coord{X: 12, Y: 8}
@@ -43,4 +43,24 @@ func TestMove(t *testing.T) {
 	m.facing = 0 // right at edge, going to bottom right
 	m.pos = lib.Coord{X: 11, Y: 2}
 	assert.Equal(t, Stance{lib.Coord{X: 15, Y: 9}, 2}, m.nextPart2())
+
+	// Puzzle 2
+	os.Args = []string{"", "input1.txt"}
+	m, _ = read()
+
+	m.facing = 3
+	m.pos = lib.Coord{X: 99, Y: 0}
+	assert.Equal(t, Stance{lib.Coord{X: 0, Y: 199}, 0}, m.nextPart2())
+
+	m.facing = 3
+	m.pos = lib.Coord{X: 50, Y: 0}
+	assert.Equal(t, Stance{lib.Coord{X: 0, Y: 150}, 0}, m.nextPart2())
+
+	m.facing = 3
+	m.pos = lib.Coord{X: 100, Y: 0}
+	assert.Equal(t, Stance{lib.Coord{X: 0, Y: 199}, 3}, m.nextPart2())
+
+	m.facing = 3
+	m.pos = lib.Coord{X: 149, Y: 0}
+	assert.Equal(t, Stance{lib.Coord{X: 49, Y: 199}, 3}, m.nextPart2())
 }

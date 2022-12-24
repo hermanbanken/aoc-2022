@@ -4,6 +4,7 @@ import (
 	"aoc/lib"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 )
 
@@ -49,7 +50,7 @@ func (m M) nextPart2() Stance {
 		return Stance{next, m.facing}
 	}
 	// figure out where to go on cube space
-	for _, p := range ort(dir(m.facing)) {
+	for _, p := range append(ortOffset(dir(m.facing), false, 1, 3), ortOffset(dir(m.facing).MultR(-3), true, 1, 3)...) {
 		np := m.pos.AddR(p.MultR(m.Dim))
 		if m.IsSet(np) {
 			// log.Println("ort", dir((p.facing+4)%4))
@@ -63,24 +64,47 @@ func (m M) nextPart2() Stance {
 			return Stance{pivot(np, m.facing, m.Dim), (m.facing + 2) % 4}
 		}
 	}
-	// top to bottom in input1.txt
-	for i, p := range ort(dir(m.facing).MultR(-3)) {
-		np := m.pos.AddR(p.MultR(m.Dim))
-		if m.IsSet(np) {
-			return Stance{flip(np, p.facing, m.facing, m.Dim), (m.facing + lib.Ternary(i == 0, 1, -1) + 4) % 4}
-		}
+
+	// Wrap around
+	np := m.pos.AddR(dir(m.facing).MultR(-4*m.Dim + 1))
+	if m.IsSet(np) {
+		return Stance{np, m.facing}
 	}
-	// top right 3 to bottom 3 in input1.txt
-	for _, p := range ortOffset(dir(m.facing).MultR(-3), 2) {
-		np := m.pos.AddR(p.MultR(m.Dim))
-		if m.IsSet(np) {
-			offset := np.AddR(dir(m.facing))
-			offset.X %= m.Dim
-			offset.Y %= m.Dim
-			base := lib.Coord{X: np.X - np.X%m.Dim, Y: np.Y - np.Y%m.Dim}
-			return Stance{base.AddR(offset), m.facing}
-		}
-	}
+
+	// // top to bottom in input1.txt
+	// for i, p := range ort(dir(m.facing).MultR(-3)) {
+	// 	np := m.pos.AddR(p.MultR(m.Dim))
+	// 	if m.IsSet(np) {
+	// 		return Stance{flip(np, p.facing, m.facing, m.Dim), (m.facing + lib.Ternary(i == 0, 1, -1) + 4) % 4}
+	// 	}
+	// }
+	// for i, p := range ortOffset(dir(m.facing).MultR(-1), 3) {
+	// 	np := m.pos.AddR(p.MultR(m.Dim))
+	// 	if m.IsSet(np) {
+	// 		return Stance{flip(np, p.facing, m.facing, m.Dim), (m.facing + lib.Ternary(i == 0, 1, -1) + 4) % 4}
+	// 	}
+	// }
+	// // top right 3 to bottom 3 in input1.txt
+	// for _, p := range ortOffset(dir(m.facing).MultR(-3), 2) {
+	// 	np := m.pos.AddR(p.MultR(m.Dim))
+	// 	if m.IsSet(np) {
+	// 		offset := np.AddR(dir(m.facing))
+	// 		offset.X %= m.Dim
+	// 		offset.Y %= m.Dim
+	// 		base := lib.Coord{X: np.X - np.X%m.Dim, Y: np.Y - np.Y%m.Dim}
+	// 		return Stance{base.AddR(offset), m.facing}
+	// 	}
+	// }
+	// for _, p := range ortOffset(dir(m.facing).MultR(-2), 3) {
+	// 	np := m.pos.AddR(p.MultR(m.Dim))
+	// 	if m.IsSet(np) {
+	// 		offset := np.AddR(dir(m.facing))
+	// 		offset.X %= m.Dim
+	// 		offset.Y %= m.Dim
+	// 		base := lib.Coord{X: np.X - np.X%m.Dim, Y: np.Y - np.Y%m.Dim}
+	// 		return Stance{base.AddR(offset), m.facing}
+	// 	}
+	// }
 
 	panic(fmt.Sprintf("no destination available from %s facing %d\n", m.pos, m.facing))
 }
@@ -169,7 +193,7 @@ func horse(facing int) []lib.Coord {
 	}
 }
 
-func read() (m *M, steps []string) {
+func read(d3 bool) (m *M, steps []string) {
 	m = &M{}
 	m.SetDefault(' ')
 	var instructions bool
@@ -204,16 +228,50 @@ func read() (m *M, steps []string) {
 					m.pos.Y = y
 					m.facing = 0
 				}
-				m.Set(lib.Coord{X: x, Y: y}, int8(c))
+				p := lib.Coord{X: x, Y: y}
+				// pivot input1 to look like input0
+				// if d3 && y > 100 {
+				// 	p = rotate(p, lib.Coord{X: 50, Y: 100}, math.Pi/2)
+				// }
+				if d3 && y >= 150 {
+					p = rotate(p, lib.Coord{X: 49, Y: 150}, -math.Pi/2).AddR(lib.Coord{1, 0})
+				}
+				if d3 && y >= 50 {
+					p.Y -= 200
+				}
+				if d3 {
+					p.Y += 150
+				}
+				m.Set(p, int8(c))
 			}
 			y += 1
 		}
 	})
+	fmt.Println("drawing:", m.Bounds())
+	fmt.Println(m.Draw(func(i int8) byte { return byte(i) }))
 	return m, steps
 }
 
+func rotate(p lib.Coord, origin lib.Coord, angle float64) lib.Coord {
+	var s = int(math.Sin(angle))
+	var c = int(math.Cos(angle))
+
+	// translate point back to origin:
+	p.X -= origin.X
+	p.Y -= origin.Y
+
+	// rotate point
+	var xnew = p.X*c - p.Y*s
+	var ynew = p.X*s + p.Y*c
+
+	// translate point back:
+	p.X = xnew + origin.X
+	p.Y = ynew + origin.Y
+	return p
+}
+
 func main() {
-	m, steps := read()
+	m, steps := read(false)
 	fmt.Println(m.Dim, steps)
 	// fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
 
@@ -222,10 +280,23 @@ func main() {
 	part1 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
 	fmt.Println("part1", part1, 1000*(part1.Y)+4*(part1.X)+m.facing)
 
-	m, steps = read()
+	m, steps = read(true)
 	m.simulate(steps, false)
 	part2 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
+	part2.Y -= 150
+	if part2.Y < 0 {
+		part2.Y += 200
+	}
+	// if d3 && y >= 50 {
+	// 	p.Y -= 200
+	// }
+	// if d3 {
+	// 	p.Y += 150
+	// }
+
 	// not 106189
+	// not 136374
+	// not 31568
 	fmt.Println("part2", part2, 1000*(part2.Y)+4*(part2.X)+m.facing)
 }
 
@@ -320,20 +391,34 @@ func dir(facing int) (dir lib.Coord) {
 }
 
 // for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
-func ort(dir lib.Coord) [2]Stance {
-	return ortOffset(dir, 1)
+func ort(dir lib.Coord) []Stance {
+	return ortOffset(dir, false, 1)
 }
 
 // for every direction (sqrt((X+Y)*(X+Y)) = 1) there are 2 positions around it
-func ortOffset(dir lib.Coord, o int) [2]Stance {
+func ortOffset(dir lib.Coord, flipped bool, o ...int) (out []Stance) {
 	if dir.X == 0 {
-		return [2]Stance{
-			{lib.Coord{X: -o, Y: dir.Y}, lib.Ternary(dir.Y < 0, -1, 1)},
-			{lib.Coord{X: o, Y: dir.Y}, lib.Ternary(dir.Y < 0, 1, -1)},
+		cond := dir.Y < 0
+		if flipped {
+			cond = !cond
 		}
+		for _, o := range o {
+			out = append(out,
+				Stance{lib.Coord{X: -o, Y: dir.Y}, lib.Ternary(cond, -1, 1)},
+				Stance{lib.Coord{X: o, Y: dir.Y}, lib.Ternary(cond, 1, -1)},
+			)
+		}
+		return out
 	}
-	return [2]Stance{
-		{lib.Coord{X: dir.X, Y: -o}, lib.Ternary(dir.X > 0, -1, 1)},
-		{lib.Coord{X: dir.X, Y: o}, lib.Ternary(dir.X > 0, 1, -1)},
+	cond := dir.X > 0
+	if flipped {
+		cond = !cond
 	}
+	for _, o := range o {
+		out = append(out,
+			Stance{lib.Coord{X: dir.X, Y: -o}, lib.Ternary(cond, -1, 1)},
+			Stance{lib.Coord{X: dir.X, Y: o}, lib.Ternary(cond, 1, -1)},
+		)
+	}
+	return out
 }

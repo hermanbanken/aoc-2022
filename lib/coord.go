@@ -175,7 +175,12 @@ func (m InfinityMap[T]) Draw(fn func(T) byte) string {
 	for y := m.bounds[0].Y; y <= m.bounds[1].Y; y++ {
 		for x := m.bounds[0].X; x <= m.bounds[1].X; x++ {
 			b, _ := m.Get(Coord{X: x, Y: y})
-			sb.WriteByte(fn(b))
+			byt := fn(b)
+			if byt == 0 {
+				sb.WriteByte(' ')
+			} else {
+				sb.WriteByte(byt)
+			}
 		}
 		sb.WriteByte('\n')
 	}

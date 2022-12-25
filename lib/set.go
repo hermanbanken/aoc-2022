@@ -46,3 +46,14 @@ func UniqueUsingKey[T comparable](t []T) (out []T) {
 	}
 	return
 }
+
+func UniqueUsingKeyPrepared[T comparable](t []T, bfFn func(T) T) (out []T) {
+	vs := map[T]T{}
+	for _, t := range t {
+		vs[bfFn(t)] = t
+	}
+	for _, v := range vs {
+		out = append(out, v)
+	}
+	return
+}

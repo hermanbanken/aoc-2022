@@ -9,8 +9,9 @@ import (
 )
 
 type BP struct {
-	idx       int
-	maxGeodes int
+	idx         int
+	maxGeodes   int
+	maxGeodes32 int
 
 	OreRobotOre  int
 	ClayRobotOre int
@@ -176,8 +177,8 @@ func main() {
 		plan.GeodeRobotOre = lib.Int(matches[5])
 		plan.GeodeRobotObsidian = lib.Int(matches[6])
 
-		fmt.Printf("\nBlueprint %d\n%+v", idx, plan)
-		plan.maxGeodes = maxGeodes(plan)
+		fmt.Printf("\nBlueprint %d\n%+v\n", idx, plan)
+		plan.maxGeodes, plan.maxGeodes32 = maxGeodes(plan)
 		return plan
 	})
 
@@ -186,15 +187,23 @@ func main() {
 		qlSum += plan.idx * plan.maxGeodes
 		fmt.Println("plan", plan.idx, "geodes", plan.maxGeodes)
 	}
-	// part1: 1785 is too low
-	fmt.Println(qlSum)
+	fmt.Println("part1", qlSum)
+
+	qlMult := 1
+	for _, plan := range plans {
+		if plan.idx <= 3 {
+			fmt.Println("*", plan.maxGeodes32)
+			qlMult *= plan.maxGeodes32
+		}
+	}
+	fmt.Println("part2", qlMult)
 }
 
-func maxGeodes(bp BP) int {
+func maxGeodes(bp BP) (after24 int, after32 int) {
 	states := []State{{T: 0, OreRobot: 1}}
 	max := 0
 	var maxState State
-	for t := 0; t < 24; t++ {
+	for t := 0; t < lib.Ternary(bp.idx <= 3, 32, 24); t++ {
 		newstates := []State{}
 		for _, oldstate := range states {
 			newstates = append(newstates, lib.Map(oldstate.Build(bp), oldstate.MineMineralsInto(bp))...)
@@ -214,9 +223,20 @@ func maxGeodes(bp BP) int {
 			}
 		}
 		fmt.Println("t", t, "states", len(states), "max", max)
+
+		// Prune any state that is at most 2 from the max
+		states = lib.Filter(states, func(s State) bool { return s.Geode >= max-2 })
+
+		if t == 23 {
+			after24 = max
+			fmt.Println(24, maxState)
+		}
+		if t == 31 {
+			after32 = max
+			fmt.Println(32, maxState)
+		}
 	}
-	fmt.Println(maxState)
-	return max
+	return
 }
 
 func max(ss ...int) (max int) {

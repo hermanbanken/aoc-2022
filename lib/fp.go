@@ -8,6 +8,16 @@ func Map[T any, R any](ts []T, fn func(T) R) (out []R) {
 	return
 }
 
+func Filter[T any](ts []T, fn func(T) bool) (out []T) {
+	out = make([]T, 0, len(ts))
+	for _, t := range ts {
+		if fn(t) {
+			out = append(out, t)
+		}
+	}
+	return
+}
+
 func Stride[T any](slice []T, step int, size int, fn func(part []T, startIndex int, list []T)) {
 	for i := 0; i < len(slice)-size; i += step {
 		fn(slice[i:i+size], i, slice)

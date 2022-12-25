@@ -47,13 +47,13 @@ func (s State) MineMineralsInto(bp BP) func(dest State) State {
 		dest.Geode += s.GeodeRobot
 
 		// Set dest to INFINITY (maxInt) if were never running out again
-		if dest.OreRobot >= max(bp.OreRobotOre, bp.ClayRobotOre, bp.ObsidianRobotOre, bp.GeodeRobotOre) {
+		if s.OreRobot >= max(bp.OreRobotOre, bp.ClayRobotOre, bp.ObsidianRobotOre, bp.GeodeRobotOre) {
 			dest.Ore = lib.Infinity
 		}
-		if dest.ClayRobot >= bp.ObsidianRobotClay {
+		if s.ClayRobot >= bp.ObsidianRobotClay {
 			dest.Clay = lib.Infinity
 		}
-		if dest.ObsidianRobot >= bp.GeodeRobotObsidian {
+		if s.ObsidianRobot >= bp.GeodeRobotObsidian {
 			dest.Obsidian = lib.Infinity
 		}
 		return dest

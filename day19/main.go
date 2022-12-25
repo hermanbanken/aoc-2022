@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -21,12 +20,6 @@ type BP struct {
 
 	GeodeRobotOre      int
 	GeodeRobotObsidian int
-
-	// Each obsidian robot costs 3 ore and 20 clay.
-	// Each ore robot costs 4 ore.
-	// Each clay robot costs 2 ore.
-	// Each clay robot costs 4 ore.
-	// Each geode robot costs 2 ore and 17 obsidian.
 }
 
 type State struct {
@@ -42,22 +35,6 @@ type State struct {
 	Clay     int
 	Obsidian int
 	Geode    int
-}
-
-func (s State) Less(other State) bool {
-	if s.GeodeRobot != other.GeodeRobot {
-		return s.GeodeRobot < other.GeodeRobot
-	}
-	if s.ObsidianRobot != other.ObsidianRobot {
-		return s.ObsidianRobot < other.ObsidianRobot
-	}
-	if s.ClayRobot != other.ClayRobot {
-		return s.ClayRobot < other.ClayRobot
-	}
-	if s.OreRobot != other.OreRobot {
-		return s.OreRobot < other.OreRobot
-	}
-	return false
 }
 
 func (s State) MineMineralsInto(bp BP) func(dest State) State {
@@ -103,7 +80,6 @@ func (s State) String() (out string) {
 		Int(s.Obsidian),
 		Int(s.Geode),
 	)
-	// out += fmt.Sprintf("%#v", s)
 	return out
 }
 
@@ -116,52 +92,7 @@ func (i Int) String() string {
 	return fmt.Sprint(int(i))
 }
 
-// func FeasibleGeodes(geodes int, bp BP) (bool, State) {
-// 	bp.GeodeRobotObsidian
-// 	bp.GeodeRobotOre
-// 	State{T: T-1, Geode: }
-
-//		mineOnly := s
-//		for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
-//			s.MineMineralsInto(mineOnly)
-//		}
-//		if mineOnly.Gt(desired) {
-//			return true, mineOnly
-//		}
-//	}
-//
-//	func (s State) Feasible(desired State) (bool, State) {
-//		mineOnly := s
-//		for timeLeft := desired.T - s.T; timeLeft > 0; timeLeft-- {
-//			s.MineMineralsInto(mineOnly)
-//		}
-//		if mineOnly.Gt(desired) {
-//			return true, mineOnly
-//		}
-//	}
-func (s State) NeedOreRobot(bp BP) bool {
-	return minutes-s.T > 2 // TODO check if we dont already have plenty!
-}
-func (s State) NeedClayRobot(bp BP) bool {
-	return minutes-s.T > 6 // TODO check if we dont already have plenty!
-}
-func (s State) NeedObsidianRobot(bp BP) bool {
-	return minutes-s.T > 4 // TODO check if we dont already have plenty!
-}
-func (s State) NeedGeodeRobot(bp BP) bool {
-	return minutes-s.T > 2
-}
-
-const minutes = 24
-
 func (s State) Build(bp BP) (out []State) {
-	// defer func() {
-	// 	fmt.Printf("%+v -> [%d][\n", s, len(out))
-	// 	for _, o := range out {
-	// 		fmt.Printf("%+v\n", o)
-	// 	}
-	// 	fmt.Println("]")
-	// }()
 
 	if s.Ore >= bp.OreRobotOre &&
 		s.Ore < lib.Infinity {
@@ -257,9 +188,6 @@ func main() {
 	}
 	// part1: 1785 is too low
 	fmt.Println(qlSum)
-
-	maxTime := 24
-	_ = maxTime
 }
 
 func maxGeodes(bp BP) int {
@@ -286,25 +214,9 @@ func maxGeodes(bp BP) int {
 			}
 		}
 		fmt.Println("t", t, "states", len(states), "max", max)
-		sort.Sort(StateSlice(states))
-		// if len(states) > 20 {
-		// 	states = states[0:20]
-		// }
 	}
 	fmt.Println(maxState)
 	return max
-}
-
-type StateSlice []State
-
-func (ss StateSlice) Len() int { return len(ss) }
-func (ss StateSlice) Less(i, j int) bool {
-	return ss[i].Less(ss[j])
-}
-func (ss StateSlice) Swap(i, j int) {
-	tmp := ss[i]
-	ss[i] = ss[j]
-	ss[j] = tmp
 }
 
 func max(ss ...int) (max int) {

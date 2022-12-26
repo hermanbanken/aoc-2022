@@ -317,10 +317,11 @@ func main() {
 	fmt.Println("\npart2 starting")
 	m, c, steps := read()
 	for sideIdx, side := range c.sides {
-		fmt.Println("side", sideIdx+1, side)
+		fmt.Println("side", sideIdx+1, "\n"+visualise(side, c.data))
 	}
-	c.simulate(steps)
-	part2 := c.pos.AddR(lib.Coord{X: 1, Y: 1})
+	c.simulate(steps, m)
+	part2 := c.sides[c.pos.Side][c.pos].AddR(lib.Coord{X: 1, Y: 1})
+	fmt.Println(m.Draw(func(i int8) byte { return byte(i) }))
 
 	// not 106189
 	// not 136374
@@ -354,7 +355,7 @@ func (m *M) simulate(path []string) {
 	m.simulate(path[1:])
 }
 
-func (c *Cube) simulate(path []string) {
+func (c *Cube) simulate(path []string, m *M) {
 	if len(path) == 0 {
 		return
 	}
@@ -375,12 +376,14 @@ func (c *Cube) simulate(path []string) {
 				fmt.Println(c.pos, c.facing, "not moved")
 				break
 			}
+			m.Set(c.sides[c.pos.Side][c.pos], int8(">v<^"[c.facing]))
 			c.pos = ns
 			c.facing = nf
 			fmt.Println(c.pos, c.facing)
 		}
 	}
-	c.simulate(path[1:])
+	c.simulate(path[1:], m)
+	m.Set(c.sides[c.pos.Side][c.pos], int8(">v<^"[c.facing]))
 }
 
 func (m *M) nextPart1() lib.Coord {
@@ -471,4 +474,15 @@ func ortOffset(dir lib.Coord, flipped bool, o ...int) (out []Stance) {
 		)
 	}
 	return out
+}
+
+func visualise(p map[Point]lib.Coord, m lib.InfinityMap[int8]) string {
+	mp := lib.InfinityMap[int8]{}
+	for p, c := range p {
+		v, _ := m.Get(c)
+		mp.Set(p.Coord, v)
+	}
+	return mp.Draw(func(i int8) byte {
+		return byte(i)
+	})
 }

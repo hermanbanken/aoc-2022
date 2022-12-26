@@ -18,11 +18,18 @@ func (p Point) String() string {
 }
 
 type Cube struct {
-	sides  [6]map[Point]lib.Coord
-	data   lib.InfinityMap[int8]
-	pos    Point
-	facing int
-	Dim    int
+	sides       [6]map[Point]lib.Coord
+	sideFacings [6]int
+	data        lib.InfinityMap[int8]
+	pos         Point
+	facing      int
+	Dim         int
+}
+
+func (c *Cube) PositionFacing() (p lib.Coord, facing int) {
+	p = c.sides[c.pos.Side][c.pos]
+	facing = (c.sideFacings[c.pos.Side] + c.facing + 4) % 4
+	return
 }
 
 func (c *Cube) Set(offset, p lib.Coord, char int8) {
@@ -31,6 +38,7 @@ func (c *Cube) Set(offset, p lib.Coord, char int8) {
 	sideCoord := p.AddR(offset).AddR(sidePos.MultR(-1)).DivR(c.Dim)
 
 	side, facing := c.Side(sideCoord)
+	c.sideFacings[side] = facing
 	if c.sides[side] == nil {
 		c.sides[side] = make(map[Point]lib.Coord)
 	}
@@ -320,13 +328,15 @@ func main() {
 		fmt.Println("side", sideIdx+1, "\n"+visualise(side, c.data))
 	}
 	c.simulate(steps, m)
-	part2 := c.sides[c.pos.Side][c.pos].AddR(lib.Coord{X: 1, Y: 1})
+	part2, facing := c.PositionFacing()
+	part2 = part2.AddR(lib.Coord{X: 1, Y: 1})
 	fmt.Println(m.Draw(func(i int8) byte { return byte(i) }))
 
 	// not 106189
 	// not 136374
 	// not 31568
-	fmt.Println("part2", part2, 1000*(part2.Y)+4*(part2.X)+m.facing)
+	// not 135296
+	fmt.Println("part2", part2, facing, 1000*(part2.Y)+4*(part2.X)+facing)
 }
 
 func (m *M) simulate(path []string) {
@@ -376,14 +386,17 @@ func (c *Cube) simulate(path []string, m *M) {
 				fmt.Println(c.pos, c.facing, "not moved")
 				break
 			}
-			m.Set(c.sides[c.pos.Side][c.pos], int8(">v<^"[c.facing]))
+			mp, mf := c.PositionFacing()
+			m.Set(mp, int8(">v<^"[mf]))
 			c.pos = ns
 			c.facing = nf
 			fmt.Println(c.pos, c.facing)
 		}
 	}
 	c.simulate(path[1:], m)
-	m.Set(c.sides[c.pos.Side][c.pos], int8(">v<^"[c.facing]))
+
+	mp, mf := c.PositionFacing()
+	m.Set(mp, int8(">v<^"[mf]))
 }
 
 func (m *M) nextPart1() lib.Coord {

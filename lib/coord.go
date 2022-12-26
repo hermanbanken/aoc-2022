@@ -26,6 +26,21 @@ func (p *Coord) Mult(i int) {
 func (p Coord) MultR(i int) Coord {
 	return Coord{X: p.X * i, Y: p.Y * i}
 }
+func (p Coord) DivR(i int) Coord {
+	return Coord{X: p.X / i, Y: p.Y / i}
+}
+
+func (p Coord) ModR(i int) Coord {
+	x := p.X % i
+	y := p.Y % i
+	if x < 0 {
+		x += i
+	}
+	if y < 0 {
+		y += i
+	}
+	return Coord{X: x, Y: y}
+}
 func (p Coord) Diff(o Coord) int {
 	return AbsDiff(p.X, o.X) + AbsDiff(p.Y, o.Y)
 }

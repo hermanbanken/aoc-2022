@@ -8,6 +8,53 @@ import (
 	"strings"
 )
 
+type Point struct {
+	lib.Coord
+	Side int
+}
+
+func (p Point) String() string {
+	return fmt.Sprintf("%d,%d:%d", p.X, p.Y, p.Side+1)
+}
+
+type Cube struct {
+	sides  [6]map[Point]lib.Coord
+	data   lib.InfinityMap[int8]
+	pos    Point
+	facing int
+	Dim    int
+}
+
+func (c *Cube) Set(offset, p lib.Coord, char int8) {
+	c.data.Set(p, char)
+	sidePos := p.AddR(offset).ModR(c.Dim)
+	sideCoord := p.AddR(offset).AddR(sidePos.MultR(-1)).DivR(c.Dim)
+
+	side, facing := c.Side(sideCoord)
+	if c.sides[side] == nil {
+		c.sides[side] = make(map[Point]lib.Coord)
+	}
+	cp := transp(sidePos, (4-facing)%4, c.Dim)
+	if cp.X >= c.Dim || cp.X < 0 || cp.Y >= c.Dim || cp.Y < 0 {
+		panic(fmt.Sprintf("invariant %s from %s (rot: %d)", cp, sidePos, (4-facing)%4))
+	}
+	c.sides[side][Point{cp, side}] = p
+}
+
+func (c *Cube) Get(a Point) (int8, bool) {
+	p, hasP := c.sides[a.Side][a]
+	if !hasP {
+		panic(fmt.Sprintf("No position %s on side %d: \n%v", a.Coord, a.Side+1, c.sides[a.Side]))
+	}
+	return c.data.Get(p)
+}
+
+func (c *Cube) Next() (a Point, facing int, v int8) {
+	np, nf := c.pos.Next(c.facing, c.Dim)
+	v, _ = c.Get(np)
+	return np, nf, v
+}
+
 type M struct {
 	lib.InfinityMap[int8]
 	side   byte
@@ -19,10 +66,6 @@ type M struct {
 type Stance struct {
 	lib.Coord
 	facing int
-}
-
-type Point struct {
-	X, Y, Z int
 }
 
 func (m M) OverEdge() (bool, lib.Coord) {
@@ -193,12 +236,14 @@ func horse(facing int) []lib.Coord {
 	}
 }
 
-func read(d3 bool) (m *M, steps []string) {
+func read() (m *M, cube *Cube, steps []string) {
 	m = &M{}
 	m.SetDefault(' ')
+	cube = &Cube{sides: [6]map[Point]lib.Coord{}, data: lib.InfinityMap[int8]{}}
 	var instructions bool
 	var y = 0
 	var first = true
+	var offset lib.Coord
 	lib.EachLine(func(line string) {
 		if line == "" {
 			instructions = true
@@ -217,31 +262,20 @@ func read(d3 bool) (m *M, steps []string) {
 		} else {
 			if m.Dim == 0 {
 				m.Dim = (lib.Ternary(len(line) == 150, 50, 4))
+				cube.Dim = (lib.Ternary(len(line) == 150, 50, 4))
 			}
 			for x, c := range line {
 				if c == ' ' {
 					continue
 				}
+				p := lib.Coord{X: x, Y: y}
 				if first {
 					first = false
-					m.pos.X = x
-					m.pos.Y = y
+					m.pos = p
 					m.facing = 0
+					offset = p.MultR(-1)
 				}
-				p := lib.Coord{X: x, Y: y}
-				// pivot input1 to look like input0
-				// if d3 && y > 100 {
-				// 	p = rotate(p, lib.Coord{X: 50, Y: 100}, math.Pi/2)
-				// }
-				if d3 && y >= 150 {
-					p = rotate(p, lib.Coord{X: 49, Y: 150}, -math.Pi/2).AddR(lib.Coord{1, 0})
-				}
-				if d3 && y >= 50 {
-					p.Y -= 200
-				}
-				if d3 {
-					p.Y += 150
-				}
+				cube.Set(offset, p, int8(c))
 				m.Set(p, int8(c))
 			}
 			y += 1
@@ -249,7 +283,7 @@ func read(d3 bool) (m *M, steps []string) {
 	})
 	fmt.Println("drawing:", m.Bounds())
 	fmt.Println(m.Draw(func(i int8) byte { return byte(i) }))
-	return m, steps
+	return m, cube, steps
 }
 
 func rotate(p lib.Coord, origin lib.Coord, angle float64) lib.Coord {
@@ -271,28 +305,22 @@ func rotate(p lib.Coord, origin lib.Coord, angle float64) lib.Coord {
 }
 
 func main() {
-	m, steps := read(false)
+	m, _, steps := read()
 	fmt.Println(m.Dim, steps)
 	// fmt.Println(m.Draw(func(b int8) byte { return byte(b) }))
 
 	fmt.Println(m.pos)
-	m.simulate(steps, true)
+	m.simulate(steps)
 	part1 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
 	fmt.Println("part1", part1, 1000*(part1.Y)+4*(part1.X)+m.facing)
 
-	m, steps = read(true)
-	m.simulate(steps, false)
-	part2 := m.pos.AddR(lib.Coord{X: 1, Y: 1})
-	part2.Y -= 150
-	if part2.Y < 0 {
-		part2.Y += 200
+	fmt.Println("\npart2 starting")
+	m, c, steps := read()
+	for sideIdx, side := range c.sides {
+		fmt.Println("side", sideIdx+1, side)
 	}
-	// if d3 && y >= 50 {
-	// 	p.Y -= 200
-	// }
-	// if d3 {
-	// 	p.Y += 150
-	// }
+	c.simulate(steps)
+	part2 := c.pos.AddR(lib.Coord{X: 1, Y: 1})
 
 	// not 106189
 	// not 136374
@@ -300,7 +328,7 @@ func main() {
 	fmt.Println("part2", part2, 1000*(part2.Y)+4*(part2.X)+m.facing)
 }
 
-func (m *M) simulate(path []string, part1 bool) {
+func (m *M) simulate(path []string) {
 	if len(path) == 0 {
 		return
 	}
@@ -313,14 +341,7 @@ func (m *M) simulate(path []string, part1 bool) {
 	default:
 		for i := lib.Int(path[0]); i > 0; i-- {
 			var n Stance = Stance{m.pos, m.facing}
-			if part1 {
-				n = Stance{m.nextPart1(), m.facing}
-			} else {
-				stance := m.nextPart2()
-				if v, _ := m.Get(stance.Coord); v == '.' {
-					n = stance
-				}
-			}
+			n = Stance{m.nextPart1(), m.facing}
 			if n.Coord == m.pos {
 				// fmt.Println(m.pos, m.facing, "not moved")
 				break
@@ -330,7 +351,36 @@ func (m *M) simulate(path []string, part1 bool) {
 			// fmt.Println(m.pos, m.facing)
 		}
 	}
-	m.simulate(path[1:], part1)
+	m.simulate(path[1:])
+}
+
+func (c *Cube) simulate(path []string) {
+	if len(path) == 0 {
+		return
+	}
+	fmt.Println(path[0])
+	switch path[0] {
+	case "R":
+		c.facing = (c.facing + 1) % 4
+	case "L":
+		c.facing = (c.facing + 3) % 4
+	default:
+		for i := lib.Int(path[0]); i > 0; i-- {
+			ns, nf, v := c.Next()
+			if v != '.' {
+				fmt.Println(string(rune(v)))
+				break
+			}
+			if ns == c.pos {
+				fmt.Println(c.pos, c.facing, "not moved")
+				break
+			}
+			c.pos = ns
+			c.facing = nf
+			fmt.Println(c.pos, c.facing)
+		}
+	}
+	c.simulate(path[1:])
 }
 
 func (m *M) nextPart1() lib.Coord {

@@ -3,6 +3,7 @@ package main
 import (
 	"aoc/lib"
 	"log"
+	"strings"
 )
 
 func main() {
@@ -17,18 +18,34 @@ func main() {
 	log.Println(sum)
 }
 
+var words = []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
+
+func asDigit(line string, pos int) int {
+	if line[pos] >= '0' && line[pos] <= '9' {
+		return int(line[pos] - '0')
+	}
+	for i, w := range words {
+		if strings.HasPrefix(line[pos:], w) {
+			return i + 1
+		}
+	}
+	return -1
+}
+
 func digitA(line string) int {
 	for i := 0; i < len(line); i++ {
-		if line[i] >= '0' && line[i] <= '9' {
-			return int(line[i] - '0')
+		d := asDigit(line, i)
+		if d >= 0 {
+			return d
 		}
 	}
 	panic("no digit found in " + line)
 }
 func digitB(line string) int {
 	for i := len(line) - 1; i >= 0; i-- {
-		if line[i] >= '0' && line[i] <= '9' {
-			return int(line[i] - '0')
+		d := asDigit(line, i)
+		if d >= 0 {
+			return d
 		}
 	}
 	panic("no digit found in " + line)

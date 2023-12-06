@@ -13,6 +13,13 @@ func Last[T any](in []T) (out T) {
 	return
 }
 
+func Min[T constraints.Ordered](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func Sum[T constraints.Integer](in []T) (out T) {
 	var sum T
 	for _, c := range in {

@@ -62,12 +62,15 @@ func main() {
 }
 
 func lookup(nr int, mapIdx int) int {
-	// go find in sorted list
-	idx := sort.Search(len(conv[mapIdx]), func(i int) bool { return conv[mapIdx][i].Src >= nr })
-	if idx == len(conv[mapIdx]) {
+	mp := conv[mapIdx]
+	n := len(mp)
+	idx := sort.Search(n, func(i int) bool {
+		return mp[i].Src >= nr && nr <= mp[i].Src+mp[i].Len
+	})
+	if idx == n {
 		return nr
 	}
-	r := conv[mapIdx][idx]
+	r := mp[idx]
 	if nr <= r.Src+r.Len {
 		return nr + r.Dst - r.Src
 	}

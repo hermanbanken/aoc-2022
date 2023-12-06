@@ -7,20 +7,14 @@ import (
 	"strings"
 )
 
-type Part struct {
-	lib.Coord
-	Length int
-	Value  int
-}
-
-var nrPos = []Part{}
-
 func main() {
 	in := lib.Lines()
 	timeStr := strings.TrimPrefix(in[0], "Time: ")
 	distStr := strings.TrimPrefix(in[1], "Distance: ")
-	times := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(timeStr), -1)
-	dists := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(distStr), -1)
+	// times := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(timeStr), -1)
+	// dists := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(distStr), -1)
+	times := regexp.MustCompile(`\s+`).Split(strings.ReplaceAll(timeStr, " ", ""), -1)
+	dists := regexp.MustCompile(`\s+`).Split(strings.ReplaceAll(distStr, " ", ""), -1)
 
 	power := 1
 	output := 0
@@ -41,12 +35,12 @@ func main() {
 			// phaseB := coastingTime * speedingTime
 			calc := movingTime * t_bat
 			// fmt.Printf("  t=%d, moving=%d, speeding=%d, coasting=%d, calc=%d", t_bat, movingTime, speedingTime, coastingTime, calc)
-			fmt.Printf("  t=%d, moving=%d, calc=%d", t_bat, movingTime, calc)
+			// fmt.Printf("  t=%d, moving=%d, calc=%d", t_bat, movingTime, calc)
 			if calc > lib.Int(dists[i]) {
 				output++
-				fmt.Print(" .")
+				// fmt.Print(" .")
 			} else {
-				fmt.Print(" x")
+				// fmt.Print(" x")
 			}
 			fmt.Println()
 		}

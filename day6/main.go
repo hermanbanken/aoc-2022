@@ -34,13 +34,14 @@ func main() {
 			movingTime := max - t_bat
 
 			// speeding up time
-			speedingTime := lib.Min(movingTime, t_bat)
-			phaseA := float64(speedingTime) * float64(speedingTime) / 2
+			// speedingTime := lib.Min(movingTime, t_bat)
+			// phaseA := float64(speedingTime) * float64(speedingTime) / 2
 			// coasting time
-			coastingTime := max - t_bat - speedingTime + 1
-			phaseB := coastingTime * speedingTime
-			calc := int(phaseA) + int(phaseB)
-			fmt.Printf("  t=%d, moving=%d, speeding=%d, coasting=%d, calc=%d", t_bat, movingTime, speedingTime, coastingTime, calc)
+			// coastingTime := max - t_bat - speedingTime + 1
+			// phaseB := coastingTime * speedingTime
+			calc := movingTime * t_bat
+			// fmt.Printf("  t=%d, moving=%d, speeding=%d, coasting=%d, calc=%d", t_bat, movingTime, speedingTime, coastingTime, calc)
+			fmt.Printf("  t=%d, moving=%d, calc=%d", t_bat, movingTime, calc)
 			if calc > lib.Int(dists[i]) {
 				output++
 				fmt.Print(" .")

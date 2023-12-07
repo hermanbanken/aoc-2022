@@ -52,7 +52,7 @@ func main() {
 	conv = append(conv, Map)
 	fmt.Println(conv)
 
-	locations := []int{}
+	lowest := -1
 	for i := 0; i < len(seeds); i += lib.Ternary(partTwo, 2, 1) {
 		start := seeds[i]
 		var count int
@@ -69,12 +69,12 @@ func main() {
 				// fmt.Println(" ", data, lookup(data, mapIdx))
 				data = lookup(data, mapIdx)
 			}
-			locations = append(locations, data)
+			if lowest == -1 || data < lowest {
+				lowest = data
+			}
 		}
 	}
-	fmt.Println(locations)
-	sort.Ints(locations)
-	fmt.Println(locations[0])
+	fmt.Println(lowest)
 }
 
 func lookup2(nr int, mapIdx int) int {

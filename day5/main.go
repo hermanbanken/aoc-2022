@@ -77,15 +77,6 @@ func main() {
 	fmt.Println(lowest)
 }
 
-func lookup2(nr int, mapIdx int) int {
-	for _, r := range conv[mapIdx] {
-		if nr >= r.Src && nr <= r.Src+r.Len {
-			return nr + r.Dst - r.Src
-		}
-	}
-	return nr
-}
-
 func lookup(nr int, mapIdx int) int {
 	mp := conv[mapIdx]
 	idx := sort.Search(len(mp), func(i int) bool {

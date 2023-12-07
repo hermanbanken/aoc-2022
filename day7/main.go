@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+var order = []string{
+	"23456789TJQKA", // part 1
+	"J23456789TQKA", // part 2
+}
+var question = 1
+
 type Hand struct {
 	hand  string
 	cards [5]int
@@ -37,10 +43,14 @@ func (h *Hand) Type() (out int) {
 	sort.Ints(h.cards[:])
 	var counts = map[int]int{}
 	jokers := 0
-	for _, c := range h.cards {
-		counts[c]++
-		if c == int('J') {
-			jokers++
+
+	// part2:
+	if question > 0 {
+		for _, c := range h.cards {
+			counts[c]++
+			if c == int('J') {
+				jokers++
+			}
 		}
 	}
 
@@ -56,9 +66,9 @@ func (h *Hand) Type() (out int) {
 	if jokers > 0 {
 		for idx := range countValues {
 			if countValues[idx][1] != int('J') {
-				if h.hand == "JJJJ8" {
-					fmt.Println("bumping", string(rune(countValues[idx][1])), jokers)
-				}
+				// if h.hand == "JJJJ8" {
+				// 	fmt.Println("bumping", string(rune(countValues[idx][1])), jokers)
+				// }
 				countValues[idx][0] += jokers
 				jokers = 0
 				for jidx := range countValues {
@@ -99,11 +109,7 @@ func main() {
 	hands := lib.Map(in, func(s string) (out *Hand) {
 		parts := strings.Fields(s)
 		out = &Hand{hand: parts[0], bid: lib.Int(parts[1])}
-		out.cards[0] = int(byte(parts[0][0]))
-		out.cards[1] = int(byte(parts[0][1]))
-		out.cards[2] = int(byte(parts[0][2]))
-		out.cards[3] = int(byte(parts[0][3]))
-		out.cards[4] = int(byte(parts[0][4]))
+		copy(out.cards[:], lib.Map([]byte(parts[0]), func(r byte) int { return int(r) }))
 		return
 	})
 	sort.Sort(Hands(hands))
@@ -113,8 +119,9 @@ func main() {
 		winnings += h.bid * (i + 1)
 	}
 	fmt.Println(winnings)
-	// 248055134
-	// 248860925
+	// 248055134 high
+	// 248860925 high
+	// 247899149 ok
 }
 
 type Hands []*Hand
@@ -132,7 +139,7 @@ func (h Hands) Less(i int, j int) bool {
 	}
 	for idx := 0; idx < 5; idx++ {
 		if h[i].hand[idx] != h[j].hand[idx] {
-			return strings.IndexByte(order, h[i].hand[idx]) < strings.IndexByte(order, h[j].hand[idx])
+			return strings.IndexByte(order[question], h[i].hand[idx]) < strings.IndexByte(order[question], h[j].hand[idx])
 		}
 	}
 	return false
@@ -146,5 +153,3 @@ func (h Hands) Swap(i int, j int) {
 }
 
 var _ sort.Interface = Hands{}
-
-var order = "J23456789TQKA"

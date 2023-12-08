@@ -30,3 +30,16 @@ func StrideMap[T any, R any](slice []T, step int, size int, fn func(part []T, st
 	}
 	return
 }
+
+func Intersect[T comparable](a []T, b []T) (out []T) {
+	var index = make(map[T]bool)
+	for _, aa := range a {
+		index[aa] = true
+	}
+	for _, bb := range b {
+		if index[bb] {
+			out = append(out, bb)
+		}
+	}
+	return
+}

@@ -12,8 +12,6 @@ type Part struct {
 	Value  int
 }
 
-var nrPos = []Part{}
-
 func main() {
 	mp := lib.InfinityMap[rune]{}
 	mp.SetDefault('.')
@@ -55,7 +53,6 @@ func main() {
 		hasSymbol := len(symbols) > 0
 
 		data := string(lib.Map(word, mp.GetOrDefault))
-		fmt.Println(string(data), string(symbols), len(symbols), symbols, hasSymbol)
 		part, err := strconv.Atoi(data)
 		if err != nil {
 			fmt.Println("error", err, word, data)
@@ -68,7 +65,56 @@ func main() {
 		return true
 	})
 
-	fmt.Println("part1", lib.Sum(partsEngine), partsEngine, lib.Sum(partsOther), partsOther)
+	fmt.Println("part1", lib.Sum(partsEngine))
+
+	fmt.Println("part2")
+	part2 := 0
+	mp.EachCoord(func(c lib.Coord, r rune) bool {
+		// ignore if not a gear
+		if mp.GetOrDefault(c) != '*' {
+			return true
+		}
+
+		digits := lib.Filter(c.Around(), func(c lib.Coord) bool {
+			return !notDigit(mp.GetOrDefault(c))
+		})
+		fmt.Println("around", string(lib.Map(digits, mp.GetOrDefault)))
+
+		gears := lib.UniqueUsingKey(lib.Map(lib.Map(digits, func(digit lib.Coord) string {
+			width := 1
+			// expand left
+			for {
+				if !notDigit(mp.GetOrDefault(digit.AddR(lib.Coord{X: -1}))) {
+					digit = digit.AddR(lib.Coord{X: -1})
+					width += 1
+				} else {
+					break
+				}
+			}
+			// expand right
+			for {
+				if !notDigit(mp.GetOrDefault(digit.AddR(lib.Coord{X: width}))) {
+					width += 1
+				} else {
+					break
+				}
+			}
+
+			coords := []lib.Coord{digit}
+			for i := 1; i < width; i++ {
+				coords = append(coords, digit.AddR(lib.Coord{X: i}))
+			}
+
+			return string(lib.Map(coords, mp.GetOrDefault))
+		}), lib.Int))
+
+		if len(gears) == 2 {
+			part2 += gears[0] * gears[1]
+		}
+		return true
+	})
+	fmt.Println("part2", part2)
+
 }
 
 func notDigit(char rune) bool {

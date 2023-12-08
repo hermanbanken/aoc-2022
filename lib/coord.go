@@ -61,6 +61,21 @@ func (p Coord) Dir(o Coord) (r Coord) {
 	return
 }
 
+func (p Coord) Around() []Coord {
+	return []Coord{
+		p.AddR(Coord{X: -1}),
+		p.AddR(Coord{X: -1, Y: 1}),
+		p.AddR(Coord{X: -1, Y: -1}),
+
+		p.AddR(Coord{Y: 1}),
+		p.AddR(Coord{Y: -1}),
+
+		p.AddR(Coord{X: 1}),
+		p.AddR(Coord{X: 1, Y: 1}),
+		p.AddR(Coord{X: 1, Y: -1}),
+	}
+}
+
 func (p *Coord) Parse(dir string) {
 	p.X = 0
 	p.Y = 0
@@ -171,6 +186,14 @@ func (m InfinityMap[T]) Get(c Coord) (T, bool) {
 		return m.defaultV, false
 	}
 	return v, true
+}
+
+func (m InfinityMap[T]) GetOrDefault(c Coord) T {
+	v, has := m.data[c]
+	if !has {
+		return m.defaultV
+	}
+	return v
 }
 
 func (m InfinityMap[T]) Width() int {

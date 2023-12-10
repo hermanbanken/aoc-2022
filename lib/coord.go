@@ -76,6 +76,15 @@ func (p Coord) Around() []Coord {
 	}
 }
 
+func (p Coord) CrossAround() []Coord {
+	return []Coord{
+		p.AddR(Coord{X: -1}),
+		p.AddR(Coord{Y: 1}),
+		p.AddR(Coord{Y: -1}),
+		p.AddR(Coord{X: 1}),
+	}
+}
+
 func (p *Coord) Parse(dir string) {
 	p.X = 0
 	p.Y = 0

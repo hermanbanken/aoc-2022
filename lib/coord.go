@@ -19,6 +19,19 @@ func (p Coord) AddR(o Coord) Coord {
 	return Coord{X: p.X + o.X, Y: p.Y + o.Y}
 }
 
+func (p Coord) Path(moves ...struct {
+	Dir   Coord
+	Count int
+}) (out []Coord) {
+	for _, move := range moves {
+		for i := 0; i < move.Count; i++ {
+			out = append(out, p)
+			p.Add(move.Dir)
+		}
+	}
+	return out
+}
+
 func (p *Coord) Mult(i int) {
 	p.X *= i
 	p.Y *= i

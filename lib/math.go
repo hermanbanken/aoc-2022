@@ -35,6 +35,19 @@ func AbsDiff(a, b int) int {
 	return b - a
 }
 
+func Abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+func Unit(a int) int {
+	if a < 0 {
+		return -1
+	}
+	return 1
+}
+
 func Int(s string) int {
 	d, err := strconv.Atoi(s)
 	if err != nil {

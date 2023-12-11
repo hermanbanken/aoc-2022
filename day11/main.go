@@ -47,17 +47,19 @@ func main() {
 	fmt.Println("empty rows", emptyRows)
 	fmt.Println("empty cols", emptyCols)
 
+	bend := 1_000_000 - 1 // 0_000 //for part2
+
 	dist := func(a, b lib.Coord) (weight int) {
 		dir := lib.Coord{X: b.X - a.X, Y: b.Y - a.Y}
 		// fmt.Println(a, b, dir)
 		for i := 0; a.X+i != b.X; i += lib.Unit(dir.X) {
 			if emptyCols[a.X+i] {
-				weight += 1
+				weight += bend
 			}
 		}
 		for i := 0; a.Y+i != b.Y; i += lib.Unit(dir.Y) {
 			if emptyRows[a.Y+i] {
-				weight += 1
+				weight += bend
 			}
 		}
 		return weight + lib.AbsDiff(a.X, b.X) + lib.AbsDiff(a.Y, b.Y)
@@ -91,5 +93,5 @@ func main() {
 		}
 	}
 
-	fmt.Println("part1", sum)
+	fmt.Println("part2", sum)
 }

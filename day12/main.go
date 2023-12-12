@@ -8,79 +8,100 @@ import (
 
 func main() {
 	lines := lib.Lines()
-	sum := 0
+	part1 := 0
+	part2 := 0
 	for _, line := range lines {
 		fmt.Println()
 		fmt.Println("puzzle", line)
-		parts := strings.Fields(line)
-		template := parts[0]
-		chunks := lib.Map(strings.Split(parts[1], ","), lib.Int)
-		result := countMatches(template, chunks)
-		sum += result
+		p := problem{}
+		p.parse(line, false)
+		result := p.variations(0, 0)
+		part1 += result
+		fmt.Printf("%d\n", result)
+
+		p.parse(line, true)
+		result = p.variations(0, 0)
+		part2 += result
 		fmt.Printf("%d\n", result)
 	}
-	fmt.Println(sum)
+	fmt.Printf("part1: %d\npart2: %d", part1, part2)
 }
 
-func countMatches(template string, chunks []int) (countMatches int) {
-	questions := []int{}
-	for i, r := range template {
-		if r == '?' {
-			questions = append(questions, i)
+func noneWorking(str string) bool {
+	for _, r := range str {
+		if r == '.' {
+			return false
 		}
-	}
-	for option := 0; option < 1<<len(questions); option++ {
-		digit := option
-		instance := template
-		for _, pos := range questions {
-			if digit%2 == 0 {
-				instance = instance[:pos] + "." + instance[pos+1:]
-			} else {
-				instance = instance[:pos] + "#" + instance[pos+1:]
-			}
-			digit = digit >> 1
-		}
-		if matches(instance, chunks) {
-			countMatches += 1
-			// fmt.Println(instance, "match")
-		} else {
-			// fmt.Println(instance, "no match")
-		}
-	}
-	return
-}
-
-func matches(instance string, chunks []int) bool {
-	// var chunkIdx = 0
-	parts := lib.Filter(strings.Split(instance, "."), func(s string) bool { return s != "" })
-	if len(parts) != len(chunks) {
-		return false
-	}
-	for i, part := range parts {
-		if len(part) == chunks[i] {
-			continue
-		}
-		return false
 	}
 	return true
-	// fmt.Println(strings.Join(strings.Split(instance, "."), ","))
-	// i := 0
-	// for {
-	// 	if instance[i] == '#' {
-	// 		for j := i + 1; j < chunks[chunkIdx]; j++ {
-	// 			if instance[j] == '.' {
-	// 				return false
-	// 			}
-	// 		}
-	// 		if instance[i+chunks[chunkIdx]] != '.' {
-	// 			return false
-	// 		}
-	// 		i += chunks[chunkIdx] + 1
-	// 	} else {
-	// 		i += 1
-	// 	}
-	// 	if i >= len(instance) {
-	// 		return true
-	// 	}
-	// }
+}
+
+type problem struct {
+	template string
+	chunks   []int
+	cache    map[[2]int]int
+}
+
+func (p *problem) parse(line string, part2 bool) {
+	parts := strings.Fields(line)
+	template := parts[0]
+	p.template = template
+	p.chunks = lib.Map(strings.Split(parts[1], ","), lib.Int)
+	p.cache = map[[2]int]int{}
+
+	if part2 {
+		templateRepeated := strings.Repeat(template+"?", 5)[0 : len(template)*5+4]
+		chunksRepeated := lib.Map(strings.Split(strings.Repeat(parts[1]+",", 5)[0:len(parts[1])*5+4], ","), lib.Int)
+		p.template = templateRepeated
+		p.chunks = chunksRepeated
+	}
+}
+
+func (p problem) variations(position int, chunkIdx int) (out int) {
+	// memoization
+	if v, hasCache := p.cache[[2]int{position, chunkIdx}]; hasCache {
+		return v
+	}
+	defer func() {
+		// fmt.Println(p.template, position, chunkIdx, out)
+		p.cache[[2]int{position, chunkIdx}] = out
+	}()
+
+	// main logic
+	if chunkIdx == len(p.chunks) {
+		if position > len(p.template) {
+			position = len(p.template)
+		}
+		return lib.Ternary(strings.Count(p.template[position:], "#") == 0, 1, 0)
+	}
+	if position >= len(p.template) {
+		return 0
+	}
+	if p.template[position] == '#' {
+		if !p.canBeGroup(position, chunkIdx) {
+			return 0
+		}
+		// begin here
+		return p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1)
+	}
+	if p.canBeGroup(position, chunkIdx) { // ?
+		return 0 +
+			// skip one
+			p.variations(position+1, chunkIdx) +
+			// begin here
+			p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1)
+	}
+	// .
+	return p.variations(position+1, chunkIdx) // skip one
+}
+
+func (p problem) canBeGroup(position int, chunkIdx int) bool {
+	end := position + p.chunks[chunkIdx]
+	if (position == 0 || p.template[position-1] != '#') &&
+		end <= len(p.template) &&
+		noneWorking(p.template[position:end]) &&
+		(end == len(p.template) || p.template[end] != '#') {
+		return true
+	}
+	return false
 }

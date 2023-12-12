@@ -4,13 +4,17 @@ import (
 	"aoc/lib"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func main() {
-	lines := lib.Lines()
+	start := time.Now()
+	defer func() {
+		fmt.Println(time.Since(start))
+	}()
 	part1 := 0
 	part2 := 0
-	for _, line := range lines {
+	for _, line := range lib.Lines() {
 		fmt.Println()
 		fmt.Println("puzzle", line)
 		p := problem{}
@@ -24,7 +28,7 @@ func main() {
 		part2 += result
 		fmt.Printf("%d\n", result)
 	}
-	fmt.Printf("part1: %d\npart2: %d", part1, part2)
+	fmt.Printf("\npart1: %d\npart2: %d\n", part1, part2)
 }
 
 func noneWorking(str string) bool {
@@ -63,36 +67,30 @@ func (p problem) variations(position int, chunkIdx int) (out int) {
 		return v
 	}
 	defer func() {
-		// fmt.Println(p.template, position, chunkIdx, out)
 		p.cache[[2]int{position, chunkIdx}] = out
 	}()
 
 	// main logic
-	if chunkIdx == len(p.chunks) {
+	switch {
+	case chunkIdx == len(p.chunks):
 		if position > len(p.template) {
 			position = len(p.template)
 		}
-		return lib.Ternary(strings.Count(p.template[position:], "#") == 0, 1, 0)
-	}
-	if position >= len(p.template) {
+		return lib.Ternary(strings.Count(p.template[position:], "#") == 0, 1, 0) // no more broken allowed
+	case position >= len(p.template):
 		return 0
-	}
-	if p.template[position] == '#' {
+	case p.template[position] == '#':
 		if !p.canBeGroup(position, chunkIdx) {
 			return 0
 		}
-		// begin here
-		return p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1)
-	}
-	if p.canBeGroup(position, chunkIdx) { // ?
+		return p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1) // consume group
+	case p.canBeGroup(position, chunkIdx):
 		return 0 +
-			// skip one
-			p.variations(position+1, chunkIdx) +
-			// begin here
-			p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1)
+			p.variations(position+1, chunkIdx) + // skip one
+			p.variations(position+p.chunks[chunkIdx]+1, chunkIdx+1) // consume group
+	default: // .
+		return p.variations(position+1, chunkIdx) // skip one
 	}
-	// .
-	return p.variations(position+1, chunkIdx) // skip one
 }
 
 func (p problem) canBeGroup(position int, chunkIdx int) bool {

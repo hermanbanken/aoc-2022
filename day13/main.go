@@ -3,127 +3,95 @@ package main
 import (
 	"aoc/lib"
 	"fmt"
-	"sort"
-	"strconv"
-	"strings"
+	"log"
 )
 
 func main() {
+	log.Println(positions(10), positions(9), positions(2))
+
 	//405
 	lines := lib.Lines()
 	start := 0
 	end := 0
 	sum := 0
+	count := 0
 	for ; end < len(lines); end++ {
 		if lines[end] == "" {
-			result := solve(lines[start:end])
+			result := solve(count, lines[start:end])
 			sum += result
 			fmt.Println(result)
 			start = end
+			count += 1
 		}
 	}
-	result := solve(lines[start+1:])
+	result := solve(count, lines[start+1:])
 	sum += result
 	fmt.Println(result)
 	fmt.Println(sum)
 }
 
-func solve(lines []string) int {
-	var hor = make([]int, len(lines))
-	var ver = make([]int, len(lines[0]))
-	var idx = make([]int, len(lines))
-	var idx2 = make([]int, len(lines[0]))
-	for i, l := range lines {
-		hor[i], _ = strconv.Atoi(strings.Replace(strings.Replace(l, ".", "1", -1), "#", "0", -1))
-		idx[i] = i
+func transpose(lines []string) []string {
+	var result []string
+	for x := range lines[0] {
+		var chars []byte
+		for _, line := range lines {
+			chars = append(chars, line[x])
+		}
+		result = append(result, string(chars))
 	}
-	for j := range lines[0] {
-		idx2[j] = j
-		ver[j], _ = strconv.Atoi(strings.Replace(strings.Replace(line(lines, j), ".", "1", -1), "#", "0", -1))
-	}
-	sort.Slice(idx, func(i, j int) bool {
-		return hor[i] > hor[j]
-	})
-	sort.Slice(idx2, func(i, j int) bool {
-		return ver[i] > ver[j]
-	})
-	fmt.Println(idx, idx2)
+	return result
+}
 
-	return 0
-	if len(lines) == 0 {
-		panic("invalid lines")
-	}
+func solve(puzzle int, lines []string) (out int) {
+	hor := solveInner(transpose(lines))
+	ver := solveInner(lines)
+	defer func() {
+		fmt.Printf("puzzle %d hor=%d ver=%d out=%d\n", puzzle, hor, ver, out)
+		for _, l := range lines {
+			fmt.Println(l)
+			_ = l
+		}
+	}()
 	fmt.Println()
-	for _, line := range lines {
-		fmt.Println(line)
+	if hor == -1 && ver == -1 {
+		panic("no mirror")
 	}
-	matches := []int{}
-	for x := 1; x < len(lines[0]); x++ {
-		if potentiallyMirrored(lines, x, 0) {
-			matches = append(matches, x)
-		}
-	}
-	for y := 1; y < len(lines); y++ {
-		if potentiallyMirrored(lines, 0, y) {
-			matches = append(matches, (y)*100)
-		}
-	}
-	if len(matches) > 0 {
-		sort.Sort(sort.Reverse(sort.IntSlice(matches)))
-		fmt.Println("matches", matches)
-		return matches[0]
-	}
-	panic("not mirrored")
-}
-
-func potentiallyMirrored(lines []string, x int, y int) bool {
-	if x > 0 {
-		x1 := x - 1
-		x2 := x
-		return line(lines, x1) == line(lines, x2)
+	if hor > ver {
+		return hor
 	} else {
-		y1 := y - 1
-		y2 := y
-		return lines[y1] == lines[y2]
+		return ver * 100
 	}
 }
 
-func areMirrored(lines []string, x int, y int) bool {
-	if x > 0 {
-		x1 := x - 1
-		x2 := x
-		for {
-			if x1 < 0 || x2 > len(lines[0])-1 {
-				return true
-			}
-			if line(lines, x1) == line(lines, x2) {
-				x1 -= 1
-				x2 += 1
+func solveInner(lines []string) int {
+outer:
+	for i := range positions(len(lines)) {
+		for p1, p2 := i, i+1; p1 >= 0 && p2 < len(lines); {
+			if lines[p1] == lines[p2] {
+				if p1 == 0 || p2 == len(lines)-1 {
+					return i + 1
+				}
+				p1 -= 1
+				p2 += 1
 			} else {
-				return false
-			}
-		}
-	} else {
-		y1 := y - 1
-		y2 := y
-		for {
-			if y1 < 0 || y2 > len(lines)-1 {
-				return true
-			}
-			if lines[y1] == lines[y2] {
-				y1 -= 1
-				y2 += 1
-			} else {
-				return false
+				continue outer
 			}
 		}
 	}
+	return -1
 }
 
-func line(lines []string, x int) string {
-	var chars []byte
-	for _, line := range lines {
-		chars = append(chars, line[x])
+func positions(count int) (out []int) {
+	var a = count/2 - 1 + count%2
+	var b = count/2 + count%2
+	for z := 0; z < count; z++ {
+		if z%2 == 0 {
+			out = append(out, a)
+			a -= 1
+		} else {
+			out = append(out, b)
+			b += 1
+		}
 	}
-	return string(chars)
+	return
 }

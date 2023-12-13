@@ -19,6 +19,31 @@ func Min[T constraints.Ordered](a, b T) T {
 	}
 	return b
 }
+func Max[T constraints.Ordered](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func Identity[T any](in T) T {
+	return in
+}
+
+func Top[T any, R constraints.Ordered](in []T, fn func(T) R) R {
+	if len(in) == 0 {
+		var zero R
+		return zero
+	}
+	max := fn(in[0])
+	for i := 1; i < len(in); i++ {
+		item := fn(in[i])
+		if item > max {
+			max = item
+		}
+	}
+	return max
+}
 
 func Sum[T constraints.Integer](in []T) (out T) {
 	var sum T

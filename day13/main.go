@@ -7,27 +7,29 @@ import (
 )
 
 func main() {
+	//405
 	log.Println(positions(10), positions(9), positions(2))
 
-	//405
-	lines := lib.Lines()
+	sum := 0
+	for count, puzzle := range puzzles(lib.Lines()) {
+		result := solve(count, puzzle)
+		sum += result
+		fmt.Println(result)
+	}
+	fmt.Println(sum)
+}
+
+func puzzles(lines []string) (out [][]string) {
 	start := 0
 	end := 0
-	sum := 0
-	count := 0
 	for ; end < len(lines); end++ {
 		if lines[end] == "" {
-			result := solve(count, lines[start:end])
-			sum += result
-			fmt.Println(result)
-			start = end
-			count += 1
+			out = append(out, lines[start:end])
+			start = end + 1
 		}
 	}
-	result := solve(count, lines[start+1:])
-	sum += result
-	fmt.Println(result)
-	fmt.Println(sum)
+	out = append(out, lines[start:])
+	return
 }
 
 func transpose(lines []string) []string {
@@ -43,8 +45,8 @@ func transpose(lines []string) []string {
 }
 
 func solve(puzzle int, lines []string) (out int) {
-	hor := solveInner(transpose(lines))
-	ver := solveInner(lines)
+	hor := solveInner(puzzle, transpose(lines))
+	ver := solveInner(puzzle, lines)
 	defer func() {
 		fmt.Printf("puzzle %d hor=%d ver=%d out=%d\n", puzzle, hor, ver, out)
 		for _, l := range lines {
@@ -63,7 +65,7 @@ func solve(puzzle int, lines []string) (out int) {
 	}
 }
 
-func solveInner(lines []string) int {
+func solveInner(puzzle int, lines []string) int {
 outer:
 	for i := range positions(len(lines)) {
 		for p1, p2 := i, i+1; p1 >= 0 && p2 < len(lines); {

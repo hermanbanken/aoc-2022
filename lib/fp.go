@@ -8,6 +8,14 @@ func Map[T any, R any](ts []T, fn func(T) R) (out []R) {
 	return
 }
 
+func MapIdx[T any, R any](ts []T, fn func(T, int) R) (out []R) {
+	out = make([]R, len(ts))
+	for i, t := range ts {
+		out[i] = fn(t, i)
+	}
+	return
+}
+
 func Filter[T any](ts []T, fn func(T) bool) (out []T) {
 	out = make([]T, 0, len(ts))
 	for _, t := range ts {
